@@ -1,0 +1,22 @@
+{
+  "fixture_version": "0.1",
+  "name": "base-not-failing",
+  "expected_failures": ["BASE_NOT_FAILING"],
+  "evidence": {
+    "task_id": "fixture-base-not-failing",
+    "base_fails": false,
+    "gold_passes": true,
+    "flake_rate": 0.0,
+    "oracle_artifacts": [],
+    "future_history_accessible": false,
+    "verifier_writable": false,
+    "network_egress_observed": false,
+    "grader_tamper_vectors": [],
+    "declared_requirements": [],
+    "verified_requirements": [],
+    "rejected_valid_alternatives": 0,
+    "broken_patch_passes": 0,
+    "broken_patch_trials": 0,
+    "cache_leaks": []
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "fixture_version": "0.1",
+  "name": "network-policy-failure",
+  "expected_failures": ["NETWORK_POLICY_FAILURE"],
+  "evidence": {
+    "task_id": "fixture-network-policy-failure",
+    "base_fails": true,
+    "gold_passes": true,
+    "flake_rate": 0.0,
+    "oracle_artifacts": [],
+    "future_history_accessible": false,
+    "verifier_writable": false,
+    "network_egress_observed": true,
+    "grader_tamper_vectors": [],
+    "declared_requirements": [],
+    "verified_requirements": [],
+    "rejected_valid_alternatives": 0,
+    "broken_patch_passes": 0,
+    "broken_patch_trials": 0,
+    "cache_leaks": []
+  }
+}

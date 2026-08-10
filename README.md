@@ -41,16 +41,24 @@ The starter uses only the Python standard library.
 
 ```bash
 python -m unittest discover -s tests -v
+PYTHONPATH=src python -m repolab_reference check-fixtures tests/fixtures/falsification
 ```
+
+## Current milestone
+
+**M0 complete:** the deterministic falsification harness includes one valid control and twelve invalid task fixtures. Every invalid fixture is rejected for exactly the expected reason. See [M0 falsification harness](docs/m0-falsification-harness.md).
+
+The harness evaluates trusted observations; it is not yet an active scanner or sandbox.
 
 ## Next gate
 
-The next milestone is **M0: falsification harness**. Before adding any agent or sandbox integration, create intentionally invalid task fixtures for base-already-passing, gold-failing, flaky verifier, oracle leakage, mutable verifier, accessible future Git history, network access, grader tampering, specification mismatch, overconstrained tests, underpowered tests, and cache leakage.
+The next milestone is **M1: single-repository replay**. It must collect real evidence for a small, carefully controlled Python repository, reconstruct clean snapshots, keep the verifier outside the writable workspace, and reproduce at least ten tasks deterministically across clean environments. No real agent adapter is in scope until that gate passes.
 
 ## Evidence
 
 - [Red-team analysis](docs/analysis.md)
 - [Scope decision](docs/adr/0001-private-reference-scope.md)
+- [M0 falsification harness](docs/m0-falsification-harness.md)
 - [Stet methodology](https://www.stet.sh/methodology)
 - [OpenAI: Separating signal from noise in coding evaluations](https://openai.com/index/separating-signal-from-noise-coding-evaluations/)
 - [SWE-smith](https://github.com/SWE-bench/SWE-smith)
