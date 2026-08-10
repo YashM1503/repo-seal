@@ -12,6 +12,7 @@ from .agent_boundary import AgentBoundaryError
 from .controlled import build_controlled_repository, write_trusted_verifier
 from .controlled_agent import replay_controlled_agent_suite
 from .falsification import check_fixture, iter_fixture_paths
+from .isolation import IsolationProbeError, run_host_process_negative_control
 from .replay import ReplayError, replay_suite
 
 
@@ -36,6 +37,12 @@ def main(argv: Optional[List[str]] = None) -> int:
         help="run the trusted M2a mock adapter across the controlled tasks",
     )
     agent_parser.add_argument("output_directory", type=Path)
+
+    isolation_parser = subparsers.add_parser(
+        "isolation-preflight",
+        help="run the M2b host-process negative-control isolation probes",
+    )
+    isolation_parser.add_argument("output_directory", type=Path)
     arguments = parser.parse_args(argv)
 
     if arguments.command == "check-fixtures":
@@ -44,6 +51,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         return _controlled_replay(arguments.output_directory)
     if arguments.command == "controlled-agent-replay":
         return _controlled_agent_replay(arguments.output_directory)
+    if arguments.command == "isolation-preflight":
+        return _isolation_preflight(arguments.output_directory)
     parser.error(f"unsupported command: {arguments.command}")
     return 2
 
@@ -151,6 +160,30 @@ def _controlled_agent_replay(output_directory: Path) -> int:
         return 0 if expected_outcome else 1
     except (AgentBoundaryError, OSError, ReplayError, ValueError) as error:
         print(f"controlled agent replay failed: {error}", file=sys.stderr)
+        return 1
+
+
+def _isolation_preflight(output_directory: Path) -> int:
+    if output_directory.exists():
+        print("output_directory must not already exist", file=sys.stderr)
+        return 2
+    try:
+        receipt = run_host_process_negative_control(
+            output_directory / "host-negative-control"
+        )
+        rendered = receipt.to_json()
+        (output_directory / "receipt.json").write_text(
+            rendered + "\n", encoding="utf-8"
+        )
+        print(rendered)
+        expected_outcome = (
+            receipt.probe_harness_passed
+            and not receipt.security_gate_passed
+            and not receipt.safe_for_real_agents
+        )
+        return 0 if expected_outcome else 1
+    except (IsolationProbeError, OSError, ValueError) as error:
+        print(f"isolation preflight failed: {error}", file=sys.stderr)
         return 1
 
 

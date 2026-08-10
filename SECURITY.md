@@ -6,6 +6,8 @@ This repository executes only its built-in controlled fixtures and trusted M2a m
 
 M2a receipts intentionally report `security_gate_passed: false` and `safe_for_real_agents: false`. A passing contract gate means only that the controlled protocol, replacement policy, and verifier flow behaved as specified.
 
+The M2b preflight adds an intentionally unsafe host-process negative control. `probe_harness_passed: true` means the probes correctly detected the missing boundary; it is not a sandbox approval. Preflight receipts also keep `security_gate_passed: false` and `safe_for_real_agents: false`.
+
 ## Required invariants for future execution
 
 1. Treat repository code, task text, dependencies, and agent output as hostile.

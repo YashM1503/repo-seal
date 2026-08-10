@@ -44,6 +44,7 @@ python -m unittest discover -s tests -v
 PYTHONPATH=src python -m repolab_reference check-fixtures tests/fixtures/falsification
 PYTHONPATH=src python -m repolab_reference controlled-replay /tmp/repolab-controlled-replay
 PYTHONPATH=src python -m repolab_reference controlled-agent-replay /tmp/repolab-controlled-agent
+PYTHONPATH=src python -m repolab_reference isolation-preflight /tmp/repolab-isolation-preflight
 ```
 
 ## Current milestone
@@ -54,11 +55,13 @@ PYTHONPATH=src python -m repolab_reference controlled-agent-replay /tmp/repolab-
 
 **M2a complete:** a trusted mock adapter receives source through a path-free JSON protocol and returns only bounded replacements of existing allowlisted files. Ten controlled tasks pass the deterministic contract gate. The accompanying security gate intentionally remains false because filesystem, network, resource, and kernel isolation are not implemented. See [M2a controlled agent boundary](docs/m2a-controlled-agent-boundary.md).
 
+**M2b preflight complete:** an active host-process negative control demonstrates that the isolation probe harness detects filesystem escape, history and sentinel exposure, verifier mutation, cache leakage, and unauthorized output. The preflight cannot approve a backend and keeps the real-agent security gate closed. See [M2b isolation preflight](docs/m2b-isolation-preflight.md).
+
 The runners execute only built-in controlled fixture code and the trusted mock adapter; they are not active scanners or sandboxes for arbitrary repositories or real agents.
 
 ## Next gate
 
-The next milestone is **M2b: an independently reviewed OS isolation boundary**. It must deny network access, constrain filesystem access and resources, keep credentials outside verification, and pass active escape probes. One real agent adapter may be considered only after that security gate passes.
+The next milestone is an **M2b disposable isolation backend**. A digest-pinned container or microVM must deny network access, constrain filesystem access and resources, isolate identity and credentials, and turn every negative-control probe into a pass. Independent review remains a mandatory final control. One real agent adapter may be considered only after that security gate passes.
 
 ## Evidence
 
@@ -67,6 +70,7 @@ The next milestone is **M2b: an independently reviewed OS isolation boundary**. 
 - [M0 falsification harness](docs/m0-falsification-harness.md)
 - [M1 controlled replay](docs/m1-controlled-replay.md)
 - [M2a controlled agent boundary](docs/m2a-controlled-agent-boundary.md)
+- [M2b isolation preflight](docs/m2b-isolation-preflight.md)
 - [Stet methodology](https://www.stet.sh/methodology)
 - [OpenAI: Separating signal from noise in coding evaluations](https://openai.com/index/separating-signal-from-noise-coding-evaluations/)
 - [SWE-smith](https://github.com/SWE-bench/SWE-smith)

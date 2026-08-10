@@ -85,7 +85,7 @@ The receipt therefore keeps leakage, verifier mutation, network policy, grader t
 
 ## M2b promotion gate
 
-Before connecting one real agent, M2b must provide an independently reviewed disposable execution environment with:
+Before connecting one real agent, M2b must provide an independently reviewed disposable execution environment with the controls below. The first fail-closed probe layer is described in [M2b isolation preflight](m2b-isolation-preflight.md).
 
 1. an explicit filesystem capability model and no access to repository history, gold changes, verifier material, or host credentials;
 2. default-denied network with active probes;

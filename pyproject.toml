@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "repolab-reference"
-version = "0.3.0"
+version = "0.4.0"
 description = "Reference schemas and quality gates for repository-derived coding-agent evaluations"
 requires-python = ">=3.9"
 license = "LicenseRef-Proprietary"
