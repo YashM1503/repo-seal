@@ -43,6 +43,7 @@ The starter uses only the Python standard library.
 python -m unittest discover -s tests -v
 PYTHONPATH=src python -m repolab_reference check-fixtures tests/fixtures/falsification
 PYTHONPATH=src python -m repolab_reference controlled-replay /tmp/repolab-controlled-replay
+PYTHONPATH=src python -m repolab_reference controlled-agent-replay /tmp/repolab-controlled-agent
 ```
 
 ## Current milestone
@@ -51,11 +52,13 @@ PYTHONPATH=src python -m repolab_reference controlled-replay /tmp/repolab-contro
 
 **M1 complete:** a controlled ten-task Python history is reconstructed into source-only base/gold snapshots, replayed with an external read-only verifier, and recorded in deterministic receipts. See [M1 controlled replay](docs/m1-controlled-replay.md).
 
-The runner executes only built-in controlled fixture code; it is not an active scanner or sandbox for arbitrary repositories.
+**M2a complete:** a trusted mock adapter receives source through a path-free JSON protocol and returns only bounded replacements of existing allowlisted files. Ten controlled tasks pass the deterministic contract gate. The accompanying security gate intentionally remains false because filesystem, network, resource, and kernel isolation are not implemented. See [M2a controlled agent boundary](docs/m2a-controlled-agent-boundary.md).
+
+The runners execute only built-in controlled fixture code and the trusted mock adapter; they are not active scanners or sandboxes for arbitrary repositories or real agents.
 
 ## Next gate
 
-The next milestone is **M2: one real agent adapter** behind an independently reviewed execution boundary. Provider credentials must remain outside verification, agent output must be reduced to an explicit patch artifact, and the unmeasured M1 checks must remain visible rather than being assumed safe.
+The next milestone is **M2b: an independently reviewed OS isolation boundary**. It must deny network access, constrain filesystem access and resources, keep credentials outside verification, and pass active escape probes. One real agent adapter may be considered only after that security gate passes.
 
 ## Evidence
 
@@ -63,6 +66,7 @@ The next milestone is **M2: one real agent adapter** behind an independently rev
 - [Scope decision](docs/adr/0001-private-reference-scope.md)
 - [M0 falsification harness](docs/m0-falsification-harness.md)
 - [M1 controlled replay](docs/m1-controlled-replay.md)
+- [M2a controlled agent boundary](docs/m2a-controlled-agent-boundary.md)
 - [Stet methodology](https://www.stet.sh/methodology)
 - [OpenAI: Separating signal from noise in coding evaluations](https://openai.com/index/separating-signal-from-noise-coding-evaluations/)
 - [SWE-smith](https://github.com/SWE-bench/SWE-smith)

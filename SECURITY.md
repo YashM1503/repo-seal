@@ -2,7 +2,9 @@
 
 ## Prototype warning
 
-This repository executes only its built-in controlled M1 fixture code and must not be treated as a secure sandbox. Do not point the replay runner at arbitrary repositories, connect a coding agent, mount provider credentials, or expose hidden tests until an independently reviewed isolation layer exists.
+This repository executes only its built-in controlled fixtures and trusted M2a mock adapter. The subprocess protocol and patch validator are not a secure sandbox. Do not point either runner at arbitrary repositories, substitute an untrusted adapter, connect a real coding agent, mount provider credentials, or expose hidden tests until an independently reviewed isolation layer exists.
+
+M2a receipts intentionally report `security_gate_passed: false` and `safe_for_real_agents: false`. A passing contract gate means only that the controlled protocol, replacement policy, and verifier flow behaved as specified.
 
 ## Required invariants for future execution
 

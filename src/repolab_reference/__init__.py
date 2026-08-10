@@ -1,12 +1,31 @@
 """Reference primitives for repository-derived coding-agent evaluations."""
 
-from .schemas import (
-    AgentConfiguration,
-    DecisionReceipt,
-    EnvironmentPolicy,
-    TaskManifest,
-    TaskQualityRecord,
-    ValidationCode,
+from .agent_boundary import (
+    AgentBoundaryError,
+    AgentInvocation,
+    AgentRequest,
+    FileReplacement,
+    PatchArtifact,
+    PatchValidationError,
+    SourceFile,
+    apply_patch_artifact,
+    capture_request,
+    parse_patch_artifact,
+    run_controlled_adapter,
+    validate_patch_artifact,
+)
+from .controlled import (
+    TASK_DEFINITIONS,
+    ControlledRepository,
+    ControlledTaskDefinition,
+    build_controlled_repository,
+    write_trusted_verifier,
+)
+from .controlled_agent import (
+    ControlledAgentReceipt,
+    ControlledAgentSuiteReceipt,
+    controlled_mock_adapter_path,
+    replay_controlled_agent_suite,
 )
 from .falsification import (
     FalsificationEvidence,
@@ -16,13 +35,6 @@ from .falsification import (
     check_fixture,
     falsify,
     load_fixture,
-)
-from .controlled import (
-    ControlledRepository,
-    ControlledTaskDefinition,
-    TASK_DEFINITIONS,
-    build_controlled_repository,
-    write_trusted_verifier,
 )
 from .replay import (
     ReplayError,
@@ -36,9 +48,23 @@ from .replay import (
     snapshot_commit,
     tree_sha256,
 )
+from .schemas import (
+    AgentConfiguration,
+    DecisionReceipt,
+    EnvironmentPolicy,
+    TaskManifest,
+    TaskQualityRecord,
+    ValidationCode,
+)
 
 __all__ = [
+    "TASK_DEFINITIONS",
+    "AgentBoundaryError",
     "AgentConfiguration",
+    "AgentInvocation",
+    "AgentRequest",
+    "ControlledAgentReceipt",
+    "ControlledAgentSuiteReceipt",
     "ControlledRepository",
     "ControlledTaskDefinition",
     "DecisionReceipt",
@@ -46,26 +72,36 @@ __all__ = [
     "FalsificationEvidence",
     "FalsificationFixture",
     "FalsificationResult",
+    "FileReplacement",
     "Finding",
+    "PatchArtifact",
+    "PatchValidationError",
     "ReplayError",
     "ReplayReceipt",
     "ReplaySuiteReceipt",
     "ReplayTask",
     "SnapshotSecurityError",
-    "TASK_DEFINITIONS",
+    "SourceFile",
     "TaskManifest",
     "TaskQualityRecord",
     "ValidationCode",
     "VerificationRun",
+    "apply_patch_artifact",
     "build_controlled_repository",
+    "capture_request",
     "check_fixture",
+    "controlled_mock_adapter_path",
     "falsify",
     "load_fixture",
+    "parse_patch_artifact",
+    "replay_controlled_agent_suite",
     "replay_suite",
     "replay_task",
+    "run_controlled_adapter",
     "snapshot_commit",
     "tree_sha256",
+    "validate_patch_artifact",
     "write_trusted_verifier",
 ]
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
