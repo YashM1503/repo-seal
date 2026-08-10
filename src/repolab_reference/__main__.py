@@ -8,7 +8,9 @@ from pathlib import Path
 import sys
 from typing import List, Optional
 
+from .controlled import build_controlled_repository, write_trusted_verifier
 from .falsification import check_fixture, iter_fixture_paths
+from .replay import ReplayError, replay_suite
 
 
 def main(argv: Optional[List[str]] = None) -> int:
@@ -20,10 +22,18 @@ def main(argv: Optional[List[str]] = None) -> int:
         help="verify that fixture expectations match falsification results",
     )
     check_parser.add_argument("directory", type=Path)
+
+    replay_parser = subparsers.add_parser(
+        "controlled-replay",
+        help="build and replay the controlled ten-task M1 repository",
+    )
+    replay_parser.add_argument("output_directory", type=Path)
     arguments = parser.parse_args(argv)
 
     if arguments.command == "check-fixtures":
         return _check_fixtures(arguments.directory)
+    if arguments.command == "controlled-replay":
+        return _controlled_replay(arguments.output_directory)
     parser.error(f"unsupported command: {arguments.command}")
     return 2
 
@@ -75,6 +85,30 @@ def _check_fixtures(directory: Path) -> int:
         )
     )
     return 0 if success else 1
+
+
+def _controlled_replay(output_directory: Path) -> int:
+    if output_directory.exists():
+        print("output_directory must not already exist", file=sys.stderr)
+        return 2
+    try:
+        controlled = build_controlled_repository(output_directory / "repository")
+        verifier = write_trusted_verifier(
+            output_directory / "trusted" / "trusted_verifier.py"
+        )
+        receipt = replay_suite(
+            repository=controlled.path,
+            tasks=controlled.tasks,
+            verifier_source=verifier,
+            work_root=output_directory / "replay",
+        )
+        rendered = receipt.to_json()
+        (output_directory / "receipt.json").write_text(rendered + "\n", encoding="utf-8")
+        print(rendered)
+        return 0 if receipt.gate_passed and len(receipt.receipts) == 10 else 1
+    except (OSError, ReplayError, ValueError) as error:
+        print(f"controlled replay failed: {error}", file=sys.stderr)
+        return 1
 
 
 if __name__ == "__main__":

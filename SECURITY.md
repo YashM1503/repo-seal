@@ -2,7 +2,7 @@
 
 ## Prototype warning
 
-This repository does not yet execute untrusted code and must not be treated as a secure sandbox. Do not connect a coding agent, mount provider credentials, expose hidden tests, or run repository-controlled code until an independently reviewed isolation layer exists.
+This repository executes only its built-in controlled M1 fixture code and must not be treated as a secure sandbox. Do not point the replay runner at arbitrary repositories, connect a coding agent, mount provider credentials, or expose hidden tests until an independently reviewed isolation layer exists.
 
 ## Required invariants for future execution
 

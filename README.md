@@ -31,8 +31,8 @@ The August 2026 red-team review found that the proposed loop—mine merged pull 
 ```text
 docs/                 decision record and analysis
 examples/             minimal portable manifests
-src/repolab_reference schema and validation primitives
-tests/                deterministic contract tests
+src/repolab_reference schemas, falsification, and controlled replay
+tests/                deterministic contracts and replay gates
 ```
 
 ## Quick start
@@ -42,23 +42,27 @@ The starter uses only the Python standard library.
 ```bash
 python -m unittest discover -s tests -v
 PYTHONPATH=src python -m repolab_reference check-fixtures tests/fixtures/falsification
+PYTHONPATH=src python -m repolab_reference controlled-replay /tmp/repolab-controlled-replay
 ```
 
 ## Current milestone
 
 **M0 complete:** the deterministic falsification harness includes one valid control and twelve invalid task fixtures. Every invalid fixture is rejected for exactly the expected reason. See [M0 falsification harness](docs/m0-falsification-harness.md).
 
-The harness evaluates trusted observations; it is not yet an active scanner or sandbox.
+**M1 complete:** a controlled ten-task Python history is reconstructed into source-only base/gold snapshots, replayed with an external read-only verifier, and recorded in deterministic receipts. See [M1 controlled replay](docs/m1-controlled-replay.md).
+
+The runner executes only built-in controlled fixture code; it is not an active scanner or sandbox for arbitrary repositories.
 
 ## Next gate
 
-The next milestone is **M1: single-repository replay**. It must collect real evidence for a small, carefully controlled Python repository, reconstruct clean snapshots, keep the verifier outside the writable workspace, and reproduce at least ten tasks deterministically across clean environments. No real agent adapter is in scope until that gate passes.
+The next milestone is **M2: one real agent adapter** behind an independently reviewed execution boundary. Provider credentials must remain outside verification, agent output must be reduced to an explicit patch artifact, and the unmeasured M1 checks must remain visible rather than being assumed safe.
 
 ## Evidence
 
 - [Red-team analysis](docs/analysis.md)
 - [Scope decision](docs/adr/0001-private-reference-scope.md)
 - [M0 falsification harness](docs/m0-falsification-harness.md)
+- [M1 controlled replay](docs/m1-controlled-replay.md)
 - [Stet methodology](https://www.stet.sh/methodology)
 - [OpenAI: Separating signal from noise in coding evaluations](https://openai.com/index/separating-signal-from-noise-coding-evaluations/)
 - [SWE-smith](https://github.com/SWE-bench/SWE-smith)
