@@ -1,0 +1,13 @@
+{
+  "base_commit": "abc123",
+  "environment": {
+    "image_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "network": "deny",
+    "wall_seconds": 900
+  },
+  "schema_version": "0.1",
+  "snapshot_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "statement": "Fix the deterministic example.",
+  "task_id": "example-001",
+  "verifier_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+}
