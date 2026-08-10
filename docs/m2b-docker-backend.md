@@ -93,8 +93,24 @@ PYTHONPATH=src python -m repolab_reference \
 
 The generated manifest contains only relative paths, file hashes, policy and command-template digests, and closed-gate review status. Its checklist cannot itself approve the boundary.
 
+### Independent-review handoff
+
+Prepare and review evidence in this order:
+
+1. Check out the exact candidate commit in a clean worktree and record `git rev-parse HEAD`.
+2. Confirm the selected daemon is local, the Engine reports 29.4.3 through 29.x, the image is native architecture, and the required AppArmor or SELinux boundary is active where policy requires it.
+3. Pull the canonical digest, run `docker-isolation-plan`, run `docker-isolation-preflight`, and retain both receipts plus the live probe's complete output directory. Do not weaken a failed control to obtain a passing receipt.
+4. Run the opt-in integration test and the normal unit suite from the same commit. Record the CI run URL or another independently retrievable test record.
+5. Generate a new `security-review-bundle` into an empty directory. Recompute every SHA-256 listed in `manifest.json`; reject missing, additional, or mismatched review-scope files.
+6. Establish image publisher provenance and an SBOM/vulnerability-maintenance process for SR-007. Record the scanner, database timestamp, severity policy, exceptions, and image digest.
+7. Decide and document the runtime boundary for SR-008, including whether patched rootless Docker, Docker Desktop Enhanced Container Isolation, gVisor, or a microVM is required for the intended adversary.
+8. Review the daemon selection, generated command, complete container inspection, mounts, credentials, active probes, supervisor cleanup, export allowlist, receipts, and CI evidence against the internal findings.
+9. Produce a separately authenticated decision naming the reviewer and organization, date, Git commit, scope digest, host and Engine, inspected evidence, disposition of every open or partially remediated finding, residual risks, and explicit pass or fail result.
+
+A passing backend receipt proves only that the trusted probe satisfied policy on one recorded environment. CI proves only that the automated checks ran. Neither is an independent approval, and the review bundle deliberately has no command that can self-approve it.
+
 ## Remaining gate
 
-An independent reviewer must assess the Docker daemon and host threat model, command construction, mount and credential boundaries, image provenance and vulnerability maintenance, active-probe coverage, streaming supervisor, cleanup behavior, export validation, and CI evidence. See the [internal review](security/m2b-internal-review-2026-08-10.md) for remediated and residual findings. Only a separately authenticated passed review may change `INDEPENDENT_REVIEW`, `security_gate_passed`, or `safe_for_real_agents`.
+An independent reviewer must assess the Docker daemon and host threat model, command construction, mount and credential boundaries, image provenance and vulnerability maintenance, active-probe coverage, streaming supervisor, cleanup behavior, export validation, and CI evidence. See the [internal review](security/m2b-internal-review-2026-08-10.md) for remediated and residual findings. Only a separately authenticated passed review covering the exact commit and scope digest may authorize a later reviewed change to `INDEPENDENT_REVIEW`, `security_gate_passed`, or `safe_for_real_agents`.
 
 After that gate closes, M2c may design one narrowly scoped real-agent adapter as a new command and policy. It must not reuse this trusted-probe command by substitution.

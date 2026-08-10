@@ -12,6 +12,12 @@ The M2b Docker backend executes only the repository-owned isolation probe in one
 
 The 2026-08-10 internal review found that the local Engine 29.2.1 does not meet the fail-closed security floor because its Linux kernel patch status for CVE-2026-31431 is not independently known. Do not bypass the version check. Upgrade Docker, regenerate live evidence, resolve the review's image-provenance and runtime-containment findings, and obtain independent review before connecting an untrusted workload.
 
+## Independent-review approval contract
+
+The generated `manifest.json` is a reproducible handoff, not an approval. A valid independent decision must be stored separately from the generated bundle and must identify the reviewer and organization, review date, exact Git commit, manifest scope digest, Docker Engine and host boundary reviewed, evidence inspected, disposition of every open or partially remediated finding, residual risks, and an explicit pass or fail result. The reviewer must authenticate that decision through a channel the repository owner can verify.
+
+Do not change `INDEPENDENT_REVIEW`, `security_gate_passed`, or `safe_for_real_agents` based on a verbal approval, an unsigned local file, a passing CI job, or a passing trusted-probe receipt. Any change to the reviewed scope invalidates the approval until a new bundle and decision cover the new scope digest.
+
 ## Required invariants for future execution
 
 1. Treat repository code, task text, dependencies, and agent output as hostile.

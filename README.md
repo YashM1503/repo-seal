@@ -67,7 +67,15 @@ The runners execute only built-in controlled fixture code and the trusted mock a
 
 ## Next gate
 
-The next gate is an **independent security review of the exact M2b scope digest**, using the generated handoff bundle. Before review, the execution environment must also meet the Engine security floor and the open image-provenance and runtime-containment findings must be closed or explicitly accepted. One real agent adapter may be considered for M2c only after that review passes; the current Docker command must not be repurposed to execute an agent.
+The next gate is an **independent security review of the exact M2b scope digest**, using the generated handoff bundle. The handoff sequence is:
+
+1. upgrade the execution host to Docker Engine 29.4.3 through 29.x without bypassing the version check;
+2. pull the pinned image, run the live Docker preflight, and retain its receipt and rejected-export evidence;
+3. generate a fresh review bundle from the exact commit under review and independently verify every file hash in `manifest.json`;
+4. resolve or explicitly owner-accept SR-007 (image provenance and vulnerability maintenance) and SR-008 (runtime/kernel containment); and
+5. obtain a separately authenticated review decision that identifies the reviewer, commit, scope digest, evidence, finding dispositions, and residual risks.
+
+Until all five steps pass, `INDEPENDENT_REVIEW` stays `UNAVAILABLE` and both security flags stay false. One real-agent adapter may be considered for M2c only in a later reviewed change; the current Docker command must not be repurposed to execute an agent.
 
 ## Evidence
 

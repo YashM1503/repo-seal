@@ -44,4 +44,6 @@ Relevant primary sources:
 
 No critical finding was identified in the trusted-probe-only workflow after remediation. Two medium residual risks remain blocking for any real-agent transition: image provenance/vulnerability maintenance and the daemon/runtime/kernel containment choice. The independent-review control remains `UNAVAILABLE`.
 
-The next safe implementation is the deterministic `security-review-bundle` handoff. M2c real-agent execution must not begin until an independent reviewer signs off on an exact scope digest and all blocking findings are closed or explicitly accepted by the owner.
+The next safe implementation is the deterministic `security-review-bundle` handoff. The reviewer must work from the exact candidate commit, verify the manifest hashes, inspect fresh plan/live/CI evidence on a policy-supported Engine, and record explicit dispositions for SR-006 through SR-010. The final decision must identify the reviewer, organization, date, commit, scope digest, environment, evidence, residual risks, and pass or fail result, and must be authenticated separately from the generated bundle.
+
+M2c real-agent execution must not begin until an independent reviewer signs off on that exact scope digest, SR-007 and SR-008 are closed or explicitly accepted by the owner, and the resulting approval is applied in a separate reviewed change. Any subsequent change to a scoped file requires a new bundle and review decision.
