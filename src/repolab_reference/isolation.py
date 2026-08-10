@@ -197,6 +197,16 @@ class ProbeResponse:
     outside_write_succeeded: bool
     verifier_mutation_succeeded: bool
     network_connection_succeeded: bool
+    network_interfaces: tuple[str, ...]
+    root_write_succeeded: bool
+    identity_uid: int
+    identity_gid: int
+    cgroup_memory_max: Optional[str]
+    cgroup_pids_max: Optional[str]
+    cgroup_cpu_max: Optional[str]
+    limit_nofile: tuple[int, int]
+    limit_fsize: tuple[int, int]
+    limit_core: tuple[int, int]
     environment_keys: tuple[str, ...]
 
 
@@ -430,6 +440,16 @@ def parse_probe_response(raw: bytes) -> ProbeResponse:
         "outside_write_succeeded",
         "verifier_mutation_succeeded",
         "network_connection_succeeded",
+        "network_interfaces",
+        "root_write_succeeded",
+        "identity_uid",
+        "identity_gid",
+        "cgroup_memory_max",
+        "cgroup_pids_max",
+        "cgroup_cpu_max",
+        "limit_nofile",
+        "limit_fsize",
+        "limit_core",
         "environment_keys",
     }
     if set(payload) != expected_keys:
@@ -440,6 +460,7 @@ def parse_probe_response(raw: bytes) -> ProbeResponse:
         "outside_write_succeeded",
         "verifier_mutation_succeeded",
         "network_connection_succeeded",
+        "root_write_succeeded",
     ):
         if type(payload[field]) is not bool:
             raise IsolationProbeError(f"{field} must be a boolean")
@@ -450,12 +471,40 @@ def parse_probe_response(raw: bytes) -> ProbeResponse:
         or environment_keys != sorted(set(environment_keys))
     ):
         raise IsolationProbeError("environment_keys must be sorted unique strings")
+    network_interfaces = payload["network_interfaces"]
+    if (
+        not isinstance(network_interfaces, list)
+        or any(not isinstance(value, str) for value in network_interfaces)
+        or network_interfaces != sorted(set(network_interfaces))
+    ):
+        raise IsolationProbeError("network_interfaces must be sorted unique strings")
+    for field in ("identity_uid", "identity_gid"):
+        if isinstance(payload[field], bool) or not isinstance(payload[field], int):
+            raise IsolationProbeError(f"{field} must be an integer")
+    limits = {}
+    for field in ("limit_nofile", "limit_fsize", "limit_core"):
+        value = payload[field]
+        if (
+            not isinstance(value, list)
+            or len(value) != 2
+            or any(
+                isinstance(item, bool) or not isinstance(item, int) for item in value
+            )
+        ):
+            raise IsolationProbeError(f"{field} must contain two integers")
+        limits[field] = tuple(value)
     digests = {}
     for field in ("history_sha256", "credential_sha256", "foreign_cache_sha256"):
         value = payload[field]
         if value is not None and not _is_sha256(value):
             raise IsolationProbeError(f"{field} must be null or a SHA-256 digest")
         digests[field] = value
+    cgroup_values = {}
+    for field in ("cgroup_memory_max", "cgroup_pids_max", "cgroup_cpu_max"):
+        value = payload[field]
+        if value is not None and not isinstance(value, str):
+            raise IsolationProbeError(f"{field} must be null or a string")
+        cgroup_values[field] = value
     return ProbeResponse(
         history_sha256=digests["history_sha256"],
         credential_sha256=digests["credential_sha256"],
@@ -463,6 +512,16 @@ def parse_probe_response(raw: bytes) -> ProbeResponse:
         outside_write_succeeded=payload["outside_write_succeeded"],
         verifier_mutation_succeeded=payload["verifier_mutation_succeeded"],
         network_connection_succeeded=payload["network_connection_succeeded"],
+        network_interfaces=tuple(network_interfaces),
+        root_write_succeeded=payload["root_write_succeeded"],
+        identity_uid=payload["identity_uid"],
+        identity_gid=payload["identity_gid"],
+        cgroup_memory_max=cgroup_values["cgroup_memory_max"],
+        cgroup_pids_max=cgroup_values["cgroup_pids_max"],
+        cgroup_cpu_max=cgroup_values["cgroup_cpu_max"],
+        limit_nofile=limits["limit_nofile"],
+        limit_fsize=limits["limit_fsize"],
+        limit_core=limits["limit_core"],
         environment_keys=tuple(environment_keys),
     )
 

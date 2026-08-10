@@ -11,6 +11,12 @@ from typing import List, Optional
 from .agent_boundary import AgentBoundaryError
 from .controlled import build_controlled_repository, write_trusted_verifier
 from .controlled_agent import replay_controlled_agent_suite
+from .docker_backend import (
+    DockerBackendError,
+    DockerIsolationPolicy,
+    docker_isolation_plan,
+    run_docker_isolation_preflight,
+)
 from .falsification import check_fixture, iter_fixture_paths
 from .isolation import IsolationProbeError, run_host_process_negative_control
 from .replay import ReplayError, replay_suite
@@ -43,6 +49,18 @@ def main(argv: Optional[List[str]] = None) -> int:
         help="run the M2b host-process negative-control isolation probes",
     )
     isolation_parser.add_argument("output_directory", type=Path)
+
+    docker_plan_parser = subparsers.add_parser(
+        "docker-isolation-plan",
+        help="render the pinned M2b Docker policy without running a container",
+    )
+    docker_plan_parser.add_argument("output_directory", type=Path)
+
+    docker_probe_parser = subparsers.add_parser(
+        "docker-isolation-preflight",
+        help="run the trusted M2b probe in the pinned local Docker image",
+    )
+    docker_probe_parser.add_argument("output_directory", type=Path)
     arguments = parser.parse_args(argv)
 
     if arguments.command == "check-fixtures":
@@ -53,6 +71,10 @@ def main(argv: Optional[List[str]] = None) -> int:
         return _controlled_agent_replay(arguments.output_directory)
     if arguments.command == "isolation-preflight":
         return _isolation_preflight(arguments.output_directory)
+    if arguments.command == "docker-isolation-plan":
+        return _docker_isolation_plan(arguments.output_directory)
+    if arguments.command == "docker-isolation-preflight":
+        return _docker_isolation_preflight(arguments.output_directory)
     parser.error(f"unsupported command: {arguments.command}")
     return 2
 
@@ -184,6 +206,54 @@ def _isolation_preflight(output_directory: Path) -> int:
         return 0 if expected_outcome else 1
     except (IsolationProbeError, OSError, ValueError) as error:
         print(f"isolation preflight failed: {error}", file=sys.stderr)
+        return 1
+
+
+def _docker_isolation_plan(output_directory: Path) -> int:
+    if output_directory.exists():
+        print("output_directory must not already exist", file=sys.stderr)
+        return 2
+    try:
+        output_directory.mkdir(parents=True)
+        receipt = docker_isolation_plan(DockerIsolationPolicy())
+        rendered = receipt.to_json()
+        (output_directory / "receipt.json").write_text(
+            rendered + "\n", encoding="utf-8"
+        )
+        print(rendered)
+        expected_outcome = (
+            receipt.live_integration_status == "NOT_RUN"
+            and not receipt.security_gate_passed
+            and not receipt.safe_for_real_agents
+        )
+        return 0 if expected_outcome else 1
+    except (DockerBackendError, OSError, ValueError) as error:
+        print(f"Docker isolation plan failed: {error}", file=sys.stderr)
+        return 1
+
+
+def _docker_isolation_preflight(output_directory: Path) -> int:
+    if output_directory.exists():
+        print("output_directory must not already exist", file=sys.stderr)
+        return 2
+    try:
+        receipt = run_docker_isolation_preflight(
+            output_directory / "docker-probe",
+            policy=DockerIsolationPolicy(),
+        )
+        rendered = receipt.to_json()
+        (output_directory / "receipt.json").write_text(
+            rendered + "\n", encoding="utf-8"
+        )
+        print(rendered)
+        expected_outcome = (
+            receipt.backend_gate_passed
+            and not receipt.security_gate_passed
+            and not receipt.safe_for_real_agents
+        )
+        return 0 if expected_outcome else 1
+    except (DockerBackendError, OSError, ValueError) as error:
+        print(f"Docker isolation preflight failed: {error}", file=sys.stderr)
         return 1
 
 

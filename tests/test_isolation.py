@@ -176,6 +176,16 @@ class ProbeResponseParsingTests(unittest.TestCase):
             "outside_write_succeeded": True,
             "verifier_mutation_succeeded": True,
             "network_connection_succeeded": False,
+            "network_interfaces": ["lo"],
+            "root_write_succeeded": False,
+            "identity_uid": 65532,
+            "identity_gid": 65532,
+            "cgroup_memory_max": "268435456",
+            "cgroup_pids_max": "32",
+            "cgroup_cpu_max": "50000 100000",
+            "limit_nofile": [64, 64],
+            "limit_fsize": [1048576, 1048576],
+            "limit_core": [0, 0],
             "environment_keys": ["HOME", "TZ"],
         }
 

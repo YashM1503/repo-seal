@@ -45,6 +45,19 @@ jobs:
       - name: Run M2b isolation negative-control preflight
         run: python -m repolab_reference isolation-preflight "$RUNNER_TEMP/repolab-isolation-preflight"
 
+      - name: Check M2b Docker policy receipt
+        run: python -m repolab_reference docker-isolation-plan "$RUNNER_TEMP/repolab-docker-plan"
+
+      - name: Pull pinned M2b probe image
+        run: docker pull "docker.io/library/python@sha256:399babc8b49529dabfd9c922f2b5eea81d611e4512e3ed250d75bd2e7683f4b0"
+
+      - name: Run M2b Docker isolation preflight
+        env:
+          REPOLAB_RUN_DOCKER_INTEGRATION: "1"
+        run: |
+          python -W error::ResourceWarning -m unittest tests.test_docker_backend.DockerLiveIntegrationTests -v
+          python -m repolab_reference docker-isolation-preflight "$RUNNER_TEMP/repolab-docker-isolation"
+
     env:
       PYTHONPATH: src
       PYTHONDONTWRITEBYTECODE: "1"

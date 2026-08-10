@@ -27,6 +27,17 @@ from .controlled_agent import (
     controlled_mock_adapter_path,
     replay_controlled_agent_suite,
 )
+from .docker_backend import (
+    DEFAULT_DOCKER_PROBE_IMAGE,
+    DockerBackendError,
+    DockerBackendUnavailable,
+    DockerIsolationPlanReceipt,
+    DockerIsolationPolicy,
+    DockerIsolationReceipt,
+    build_docker_command,
+    docker_isolation_plan,
+    run_docker_isolation_preflight,
+)
 from .falsification import (
     FalsificationEvidence,
     FalsificationFixture,
@@ -72,6 +83,7 @@ from .schemas import (
 )
 
 __all__ = [
+    "DEFAULT_DOCKER_PROBE_IMAGE",
     "REQUIRED_CONTROLS",
     "TASK_DEFINITIONS",
     "AgentBoundaryError",
@@ -84,6 +96,11 @@ __all__ = [
     "ControlledRepository",
     "ControlledTaskDefinition",
     "DecisionReceipt",
+    "DockerBackendError",
+    "DockerBackendUnavailable",
+    "DockerIsolationPlanReceipt",
+    "DockerIsolationPolicy",
+    "DockerIsolationReceipt",
     "EnvironmentPolicy",
     "ExportDecision",
     "ExportedArtifact",
@@ -110,10 +127,12 @@ __all__ = [
     "VerificationRun",
     "apply_patch_artifact",
     "build_controlled_repository",
+    "build_docker_command",
     "capture_request",
     "check_fixture",
     "controlled_isolation_probe_path",
     "controlled_mock_adapter_path",
+    "docker_isolation_plan",
     "evaluate_export",
     "falsify",
     "load_fixture",
@@ -123,6 +142,7 @@ __all__ = [
     "replay_suite",
     "replay_task",
     "run_controlled_adapter",
+    "run_docker_isolation_preflight",
     "run_host_process_negative_control",
     "snapshot_commit",
     "tree_sha256",
@@ -130,4 +150,4 @@ __all__ = [
     "write_trusted_verifier",
 ]
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"

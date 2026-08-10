@@ -73,9 +73,9 @@ Expected top-level receipt facts are:
 
 Receipt digests are deterministic across repeated runs in the same environment. Network-probe availability is environment-dependent and is therefore explicit evidence rather than a cross-platform golden constant.
 
-## Next backend gate
+## Implemented backend gate
 
-The next M2b slice must execute the same probes inside a disposable, digest-pinned container or microVM with:
+The next M2b slice now executes the same probes inside a disposable, digest-pinned Docker container with:
 
 1. a read-only root filesystem and only the candidate workspace mounted writable;
 2. no mount containing repository history, verifier bytes, host sockets, credentials, or foreign caches;
@@ -87,4 +87,6 @@ The next M2b slice must execute the same probes inside a disposable, digest-pinn
 8. immutable backend and policy digests in the receipt;
 9. independent security review before the real-agent flag can change.
 
-The host negative control must remain in CI after a real backend is added so probe regressions cannot silently turn missing isolation into passing evidence.
+The implementation and its live evidence are documented in [M2b Docker backend](m2b-docker-backend.md). All technical controls pass in the tested backend, while independent review remains `UNAVAILABLE`; this leaves the security gate closed and the backend unsafe for real agents by policy.
+
+The host negative control remains in CI so probe regressions cannot silently turn missing isolation into passing evidence.

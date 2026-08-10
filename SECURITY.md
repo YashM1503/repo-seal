@@ -8,6 +8,8 @@ M2a receipts intentionally report `security_gate_passed: false` and `safe_for_re
 
 The M2b preflight adds an intentionally unsafe host-process negative control. `probe_harness_passed: true` means the probes correctly detected the missing boundary; it is not a sandbox approval. Preflight receipts also keep `security_gate_passed: false` and `safe_for_real_agents: false`.
 
+The M2b Docker backend executes only the repository-owned isolation probe in one pinned Python image. Its passing `backend_gate_passed` value is technical evidence about that exact probe command, image, engine, and policy—not approval to substitute an agent or arbitrary repository code. The source mount deliberately contains the trusted probe package, and the implementation has not received the required independent review. Docker receipts therefore keep `security_gate_passed: false` and `safe_for_real_agents: false`.
+
 ## Required invariants for future execution
 
 1. Treat repository code, task text, dependencies, and agent output as hostile.

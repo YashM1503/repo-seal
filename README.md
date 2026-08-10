@@ -45,6 +45,9 @@ PYTHONPATH=src python -m repolab_reference check-fixtures tests/fixtures/falsifi
 PYTHONPATH=src python -m repolab_reference controlled-replay /tmp/repolab-controlled-replay
 PYTHONPATH=src python -m repolab_reference controlled-agent-replay /tmp/repolab-controlled-agent
 PYTHONPATH=src python -m repolab_reference isolation-preflight /tmp/repolab-isolation-preflight
+PYTHONPATH=src python -m repolab_reference docker-isolation-plan /tmp/repolab-docker-plan
+# Requires Docker and the exact image digest documented below.
+PYTHONPATH=src python -m repolab_reference docker-isolation-preflight /tmp/repolab-docker-preflight
 ```
 
 ## Current milestone
@@ -57,11 +60,13 @@ PYTHONPATH=src python -m repolab_reference isolation-preflight /tmp/repolab-isol
 
 **M2b preflight complete:** an active host-process negative control demonstrates that the isolation probe harness detects filesystem escape, history and sentinel exposure, verifier mutation, cache leakage, and unauthorized output. The preflight cannot approve a backend and keeps the real-agent security gate closed. See [M2b isolation preflight](docs/m2b-isolation-preflight.md).
 
+**M2b Docker backend complete:** the same trusted probe now runs in a disposable, digest-pinned Docker container with a read-only root, no network, three controlled mounts, a non-root identity, dropped capabilities, and bounded CPU, memory, processes, files, output, and wall time. The tested backend passes every technical control. Independent review remains `UNAVAILABLE`, so `security_gate_passed` and `safe_for_real_agents` remain false. See [M2b Docker backend](docs/m2b-docker-backend.md).
+
 The runners execute only built-in controlled fixture code and the trusted mock adapter; they are not active scanners or sandboxes for arbitrary repositories or real agents.
 
 ## Next gate
 
-The next milestone is an **M2b disposable isolation backend**. A digest-pinned container or microVM must deny network access, constrain filesystem access and resources, isolate identity and credentials, and turn every negative-control probe into a pass. Independent review remains a mandatory final control. One real agent adapter may be considered only after that security gate passes.
+The next gate is an **independent security review of the M2b Docker execution boundary**. Review must cover the command policy, mount topology, daemon threat model, active probes, export validator, cleanup paths, and CI evidence. One real agent adapter may be considered for M2c only after the review passes and the security gate can close; the current Docker command must not be repurposed to execute an agent.
 
 ## Evidence
 
@@ -71,10 +76,11 @@ The next milestone is an **M2b disposable isolation backend**. A digest-pinned c
 - [M1 controlled replay](docs/m1-controlled-replay.md)
 - [M2a controlled agent boundary](docs/m2a-controlled-agent-boundary.md)
 - [M2b isolation preflight](docs/m2b-isolation-preflight.md)
+- [M2b Docker backend](docs/m2b-docker-backend.md)
 - [Stet methodology](https://www.stet.sh/methodology)
 - [OpenAI: Separating signal from noise in coding evaluations](https://openai.com/index/separating-signal-from-noise-coding-evaluations/)
 - [SWE-smith](https://github.com/SWE-bench/SWE-smith)
 
 ## Security
 
-This code models trust boundaries; it does not provide a hardened sandbox. See [SECURITY.md](SECURITY.md) before connecting any executor.
+This code models and probes trust boundaries; it is not approved for real-agent or untrusted-code execution. See [SECURITY.md](SECURITY.md) before connecting any executor.
