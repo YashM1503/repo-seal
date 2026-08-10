@@ -8,7 +8,9 @@ M2a receipts intentionally report `security_gate_passed: false` and `safe_for_re
 
 The M2b preflight adds an intentionally unsafe host-process negative control. `probe_harness_passed: true` means the probes correctly detected the missing boundary; it is not a sandbox approval. Preflight receipts also keep `security_gate_passed: false` and `safe_for_real_agents: false`.
 
-The M2b Docker backend executes only the repository-owned isolation probe in one pinned Python image. Its passing `backend_gate_passed` value is technical evidence about that exact probe command, image, engine, and policy—not approval to substitute an agent or arbitrary repository code. The source mount deliberately contains the trusted probe package, and the implementation has not received the required independent review. Docker receipts therefore keep `security_gate_passed: false` and `safe_for_real_agents: false`.
+The M2b Docker backend executes only the repository-owned isolation probe in one pinned Python image. A `backend_gate_passed` value is technical evidence about that exact probe command, image, engine, and policy—not approval to substitute an agent or arbitrary repository code. Policy 0.2 requires a local Unix-socket daemon and Docker Engine 29.4.3 through 29.x, rejects image-declared volumes, mounts only a temporary read-only probe copy, and measures runtime privilege state. A future Engine major version requires policy review rather than passing automatically. The implementation has not received the required independent review. Docker receipts therefore keep `security_gate_passed: false` and `safe_for_real_agents: false`.
+
+The 2026-08-10 internal review found that the local Engine 29.2.1 does not meet the fail-closed security floor because its Linux kernel patch status for CVE-2026-31431 is not independently known. Do not bypass the version check. Upgrade Docker, regenerate live evidence, resolve the review's image-provenance and runtime-containment findings, and obtain independent review before connecting an untrusted workload.
 
 ## Required invariants for future execution
 

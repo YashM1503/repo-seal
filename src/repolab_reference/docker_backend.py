@@ -12,7 +12,9 @@ import json
 import os
 import re
 import selectors
+import shutil
 import signal
+import stat
 import subprocess
 import time
 import uuid
@@ -48,6 +50,9 @@ EXPLICIT_CONTAINER_ENVIRONMENT: Mapping[str, str] = {
     "TZ": "UTC",
 }
 
+PROBE_CONTAINER_PATH = "/repolab-isolation-probe.py"
+LOCAL_DOCKER_HOST_PLACEHOLDER = "<local-unix-socket>"
+
 
 class DockerBackendError(RuntimeError):
     """Raised when the Docker backend violates its controlled contract."""
@@ -60,6 +65,8 @@ class DockerBackendUnavailable(DockerBackendError):
 @dataclass(frozen=True)
 class DockerIsolationPolicy:
     image_ref: str = DEFAULT_DOCKER_PROBE_IMAGE
+    required_engine_major: int = 29
+    minimum_engine_version: str = "29.4.3"
     user_uid: int = 65532
     user_gid: int = 65532
     memory_bytes: int = 256 * 1024 * 1024
@@ -77,11 +84,15 @@ class DockerIsolationPolicy:
         "PYTHON_SHA256",
         "PYTHON_VERSION",
     )
-    policy_version: str = "0.1"
+    policy_version: str = "0.2"
 
     def __post_init__(self) -> None:
         _require_digest_image(self.image_ref)
+        minimum_engine = _parse_engine_version(self.minimum_engine_version)
+        if minimum_engine[0] != self.required_engine_major:
+            raise ValueError("minimum_engine_version must match required_engine_major")
         for name in (
+            "required_engine_major",
             "user_uid",
             "user_gid",
             "memory_bytes",
@@ -128,6 +139,8 @@ class DockerIsolationPolicy:
         return {
             "policy_version": self.policy_version,
             "image_ref": self.image_ref,
+            "required_engine_major": self.required_engine_major,
+            "minimum_engine_version": self.minimum_engine_version,
             "user_uid": self.user_uid,
             "user_gid": self.user_gid,
             "memory_bytes": self.memory_bytes,
@@ -147,7 +160,7 @@ class DockerIsolationPolicy:
 class DockerIsolationPlanReceipt:
     policy: DockerIsolationPolicy
     command_template_sha256: str
-    receipt_version: str = "0.1"
+    receipt_version: str = "0.2"
 
     @property
     def live_integration_status(self) -> str:
@@ -168,7 +181,7 @@ class DockerIsolationPlanReceipt:
     def _core_dict(self) -> dict[str, Any]:
         return {
             "receipt_version": self.receipt_version,
-            "backend_id": "docker-controlled-probe/0.1",
+            "backend_id": "docker-controlled-probe/0.2",
             "policy": self.policy.to_dict(),
             "policy_sha256": self.policy.policy_sha256,
             "command_template_sha256": self.command_template_sha256,
@@ -191,16 +204,19 @@ class DockerIsolationReceipt:
     policy: DockerIsolationPolicy
     command_template_sha256: str
     image_id: str
+    image_architecture: str
     engine_version: str
     engine_architecture: str
     engine_security_options: tuple[str, ...]
     engine_cgroup_version: str
     engine_storage_driver: str
+    docker_cli_sha256: str
+    engine_endpoint_kind: str
     probe_sha256: str
     probe_stdout_sha256: str
     probe_stderr_sha256: str
     findings: tuple[IsolationFinding, ...]
-    receipt_version: str = "0.1"
+    receipt_version: str = "0.2"
 
     @property
     def backend_gate_passed(self) -> bool:
@@ -232,16 +248,19 @@ class DockerIsolationReceipt:
     def _core_dict(self) -> dict[str, Any]:
         return {
             "receipt_version": self.receipt_version,
-            "backend_id": "docker-controlled-probe/0.1",
+            "backend_id": "docker-controlled-probe/0.2",
             "policy": self.policy.to_dict(),
             "policy_sha256": self.policy.policy_sha256,
             "command_template_sha256": self.command_template_sha256,
             "image_id": self.image_id,
+            "image_architecture": self.image_architecture,
             "engine_version": self.engine_version,
             "engine_architecture": self.engine_architecture,
             "engine_security_options": list(self.engine_security_options),
             "engine_cgroup_version": self.engine_cgroup_version,
             "engine_storage_driver": self.engine_storage_driver,
+            "docker_cli_sha256": self.docker_cli_sha256,
+            "engine_endpoint_kind": self.engine_endpoint_kind,
             "probe_sha256": self.probe_sha256,
             "probe_stdout_sha256": self.probe_stdout_sha256,
             "probe_stderr_sha256": self.probe_stderr_sha256,
@@ -273,6 +292,8 @@ def docker_isolation_plan(
 ) -> DockerIsolationPlanReceipt:
     template = _docker_command(
         policy,
+        docker_executable="docker",
+        docker_host=LOCAL_DOCKER_HOST_PLACEHOLDER,
         probe_source="<probe-source>",
         workspace="<workspace>",
         export_directory="<export>",
@@ -292,6 +313,8 @@ def build_docker_command(
     workspace: Path,
     export_directory: Path,
     container_name: str,
+    docker_executable: str = "docker",
+    docker_host: str = LOCAL_DOCKER_HOST_PLACEHOLDER,
 ) -> tuple[str, ...]:
     for name, path in (
         ("probe_source", probe_source),
@@ -304,8 +327,12 @@ def build_docker_command(
             raise ValueError(f"{name} contains a character unsafe for Docker mounts")
     if re.fullmatch(r"repolab-probe-[0-9a-f]{32}", container_name) is None:
         raise ValueError("container_name must use the controlled format")
+    _require_docker_executable(docker_executable)
+    _require_local_docker_host(docker_host)
     command = _docker_command(
         policy,
+        docker_executable=docker_executable,
+        docker_host=docker_host,
         probe_source=str(probe_source),
         workspace=str(workspace),
         export_directory=str(export_directory),
@@ -324,31 +351,65 @@ def run_docker_isolation_preflight(
 
     if work_root.exists():
         raise ValueError("work_root must not already exist")
-    work_root.mkdir(parents=True)
+    docker_environment = _docker_cli_environment()
+    docker_cli = _resolve_docker_cli()
+    expected_docker_cli_sha256 = file_sha256(docker_cli)
+    docker_host = _inspect_local_docker_endpoint(docker_cli, docker_environment)
+    image = _inspect_image(policy, docker_cli, docker_host, docker_environment)
+    engine = _inspect_engine(docker_cli, docker_host, docker_environment)
+    if not _engine_version_supported(engine["version"], policy):
+        raise DockerBackendUnavailable(
+            "Docker Engine security range not met: "
+            f"found {engine['version']}, require {policy.minimum_engine_version} "
+            f"through {policy.required_engine_major}.x"
+        )
+    if not _engine_lsm_supported(engine["architecture"], engine["security_options"]):
+        raise DockerBackendUnavailable(
+            "Docker Engine lacks the required AppArmor or SELinux boundary "
+            f"for architecture {engine['architecture']}"
+        )
+    if image["architecture"] != engine["architecture"]:
+        raise DockerBackendUnavailable(
+            "Docker image architecture must match the native Engine architecture"
+        )
+
+    work_root.mkdir(parents=True, mode=0o700)
+    work_root.chmod(0o700)
     workspace = (work_root / "workspace").resolve()
     export_directory = (work_root / "export").resolve()
+    trusted_directory = (work_root / "trusted").resolve()
     workspace.mkdir()
     export_directory.mkdir()
+    trusted_directory.mkdir()
     workspace.chmod(0o777)
     export_directory.chmod(0o777)
     (workspace / "input.txt").write_text("controlled source\n", encoding="utf-8")
 
-    image = _inspect_image(policy)
-    engine = _inspect_engine()
+    selected_probe = controlled_isolation_probe_path().resolve()
+    if not selected_probe.is_file() or selected_probe.is_symlink():
+        raise DockerBackendError("controlled isolation probe must be a regular file")
+    probe_source = trusted_directory / "isolation_probe.py"
+    probe_source.write_bytes(selected_probe.read_bytes())
+    probe_source.chmod(0o444)
+    expected_probe_sha256 = file_sha256(selected_probe)
+    if file_sha256(probe_source) != expected_probe_sha256:
+        raise DockerBackendError("trusted isolation probe copy did not match source")
+
     container_name = "repolab-probe-" + uuid.uuid4().hex
-    probe_source = controlled_isolation_probe_path().parent.resolve()
     command = build_docker_command(
         policy,
         probe_source=probe_source,
         workspace=workspace,
         export_directory=export_directory,
         container_name=container_name,
+        docker_executable=str(docker_cli),
+        docker_host=docker_host,
     )
     request = {
         "export_directory": "/export",
         "outside_write_target": "/outside/escaped.txt",
         "history_sentinel": "/host-sentinels/history",
-        "verifier_target": "/host-sentinels/verifier",
+        "verifier_target": PROBE_CONTAINER_PATH,
         "credential_sentinel": "/host-sentinels/credential",
         "foreign_cache_sentinel": "/host-sentinels/foreign-cache",
         "network_host": "127.0.0.1",
@@ -361,12 +422,17 @@ def run_docker_isolation_preflight(
             input_bytes=json.dumps(request, sort_keys=True).encode("utf-8"),
             max_output_bytes=policy.max_output_bytes,
             timeout_seconds=policy.wall_seconds,
+            environment=docker_environment,
         )
     except Exception:
-        _force_remove_container(container_name)
+        _force_remove_container(
+            container_name, docker_cli, docker_host, docker_environment
+        )
         raise
     if result.returncode != 0:
-        _force_remove_container(container_name)
+        _force_remove_container(
+            container_name, docker_cli, docker_host, docker_environment
+        )
         detail = result.stderr.decode("utf-8", errors="replace").strip()
         raise DockerBackendError(
             f"controlled Docker probe exited with {result.returncode}: {detail}"
@@ -382,22 +448,32 @@ def run_docker_isolation_preflight(
         export_decision=export_decision,
         image_environment_keys=image["environment_keys"],
         image_os=image["os"],
+        image_architecture=image["architecture"],
         engine_os=engine["os"],
+        engine_architecture=engine["architecture"],
         engine_security_options=engine["security_options"],
         engine_cgroup_version=engine["cgroup_version"],
         engine_storage_driver=engine["storage_driver"],
+        engine_version=engine["version"],
+        observed_probe_sha256=file_sha256(probe_source),
+        expected_probe_sha256=expected_probe_sha256,
     )
+    if file_sha256(docker_cli) != expected_docker_cli_sha256:
+        raise DockerBackendError("Docker CLI changed during the controlled run")
     plan = docker_isolation_plan(policy)
     return DockerIsolationReceipt(
         policy=policy,
         command_template_sha256=plan.command_template_sha256,
         image_id=image["id"],
+        image_architecture=image["architecture"],
         engine_version=engine["version"],
         engine_architecture=engine["architecture"],
         engine_security_options=engine["security_options"],
         engine_cgroup_version=engine["cgroup_version"],
         engine_storage_driver=engine["storage_driver"],
-        probe_sha256=file_sha256(controlled_isolation_probe_path()),
+        docker_cli_sha256=expected_docker_cli_sha256,
+        engine_endpoint_kind="local-unix-socket",
+        probe_sha256=expected_probe_sha256,
         probe_stdout_sha256=_bytes_sha256(result.stdout),
         probe_stderr_sha256=_bytes_sha256(result.stderr),
         findings=findings,
@@ -407,13 +483,16 @@ def run_docker_isolation_preflight(
 def _docker_command(
     policy: DockerIsolationPolicy,
     *,
+    docker_executable: str,
+    docker_host: str,
     probe_source: str,
     workspace: str,
     export_directory: str,
     container_name: str,
 ) -> tuple[str, ...]:
     arguments = [
-        "docker",
+        docker_executable,
+        f"--host={docker_host}",
         "run",
         "--rm",
         "--pull=never",
@@ -427,6 +506,7 @@ def _docker_command(
         "--cgroupns=private",
         "--cap-drop=ALL",
         "--security-opt=no-new-privileges=true",
+        "--security-opt=seccomp=builtin",
         f"--user={policy.user_uid}:{policy.user_gid}",
         f"--memory={policy.memory_bytes}",
         f"--memory-swap={policy.memory_bytes}",
@@ -448,15 +528,18 @@ def _docker_command(
     )
     arguments.extend(
         (
-            f"--mount=type=bind,src={probe_source},dst=/opt/repolab,readonly",
-            f"--mount=type=bind,src={workspace},dst=/workspace",
-            f"--mount=type=bind,src={export_directory},dst=/export",
+            f"--mount=type=bind,src={probe_source},dst={PROBE_CONTAINER_PATH},"
+            "readonly,bind-propagation=rprivate",
+            f"--mount=type=bind,src={workspace},dst=/workspace,"
+            "bind-propagation=rprivate,bind-recursive=disabled",
+            f"--mount=type=bind,src={export_directory},dst=/export,"
+            "bind-propagation=rprivate,bind-recursive=disabled",
             "--workdir=/workspace",
             "--entrypoint=python3",
             policy.image_ref,
             "-I",
             "-B",
-            "/opt/repolab/isolation_probe.py",
+            PROBE_CONTAINER_PATH,
         )
     )
     return tuple(arguments)
@@ -476,6 +559,7 @@ def _validate_docker_command(
         "--cgroupns=private",
         "--cap-drop=ALL",
         "--security-opt=no-new-privileges=true",
+        "--security-opt=seccomp=builtin",
         f"--user={policy.user_uid}:{policy.user_gid}",
         f"--memory={policy.memory_bytes}",
         f"--memory-swap={policy.memory_bytes}",
@@ -485,6 +569,12 @@ def _validate_docker_command(
     }
     if not required.issubset(command):
         raise DockerBackendError("Docker command is missing a required isolation flag")
+    if len(command) < 3 or command[2] != "run":
+        raise DockerBackendError("Docker command must invoke the controlled run action")
+    _require_docker_executable(command[0])
+    if not command[1].startswith("--host="):
+        raise DockerBackendError("Docker command must specify one daemon host")
+    _require_local_docker_host(command[1].removeprefix("--host="))
     forbidden = (
         "--privileged",
         "--network=host",
@@ -512,25 +602,98 @@ def _validate_docker_command(
         for component in mount.removeprefix("--mount=").split(",")
         if component.startswith("dst=")
     }
-    if destinations != {"/opt/repolab", "/workspace", "/export"}:
+    if destinations != {PROBE_CONTAINER_PATH, "/workspace", "/export"}:
         raise DockerBackendError("Docker mount destinations do not match policy")
+    if any("bind-propagation=rprivate" not in mount for mount in mounts):
+        raise DockerBackendError("Docker bind mounts must use private propagation")
+    writable_mounts = [
+        mount for mount in mounts if f"dst={PROBE_CONTAINER_PATH}" not in mount
+    ]
+    if any("bind-recursive=disabled" not in mount for mount in writable_mounts):
+        raise DockerBackendError("Docker writable binds must exclude submounts")
+    probe_mount = next(
+        mount for mount in mounts if f"dst={PROBE_CONTAINER_PATH}" in mount
+    )
+    if "readonly" not in probe_mount:
+        raise DockerBackendError("Docker probe mount must be read-only")
     if command[-4:] != (
         policy.image_ref,
         "-I",
         "-B",
-        "/opt/repolab/isolation_probe.py",
+        PROBE_CONTAINER_PATH,
     ):
         raise DockerBackendError("Docker command entrypoint does not match policy")
 
 
-def _inspect_image(policy: DockerIsolationPolicy) -> dict[str, Any]:
+def _docker_cli_environment() -> dict[str, str]:
+    return {
+        key: value for key, value in os.environ.items() if not key.startswith("DOCKER_")
+    }
+
+
+def _resolve_docker_cli() -> Path:
+    candidate = shutil.which("docker")
+    if candidate is None:
+        raise DockerBackendUnavailable("Docker CLI is not installed")
+    try:
+        resolved = Path(candidate).resolve(strict=True)
+        metadata = resolved.stat()
+    except OSError as error:
+        raise DockerBackendUnavailable("Docker CLI path is unavailable") from error
+    if not stat.S_ISREG(metadata.st_mode) or not os.access(resolved, os.X_OK):
+        raise DockerBackendUnavailable("Docker CLI is not an executable regular file")
+    if metadata.st_mode & (stat.S_IWGRP | stat.S_IWOTH):
+        raise DockerBackendUnavailable(
+            "Docker CLI must not be group- or world-writable"
+        )
+    return resolved
+
+
+def _inspect_local_docker_endpoint(
+    docker_cli: Path,
+    environment: Mapping[str, str],
+) -> str:
     result = _run_metadata_command(
         (
-            "docker",
+            str(docker_cli),
+            "context",
+            "inspect",
+            "--format",
+            "{{json .Endpoints.docker.Host}}",
+        ),
+        environment=environment,
+    )
+    try:
+        endpoint = json.loads(result.stdout.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise DockerBackendError("Docker context endpoint was invalid JSON") from error
+    _require_local_docker_host(endpoint)
+    socket_path = Path(endpoint.removeprefix("unix://"))
+    try:
+        resolved_socket = socket_path.resolve(strict=True)
+        metadata = resolved_socket.stat()
+    except OSError as error:
+        raise DockerBackendUnavailable("local Docker socket is unavailable") from error
+    if not stat.S_ISSOCK(metadata.st_mode):
+        raise DockerBackendUnavailable("local Docker endpoint is not a Unix socket")
+    return "unix://" + str(resolved_socket)
+
+
+def _inspect_image(
+    policy: DockerIsolationPolicy,
+    docker_cli: Path,
+    docker_host: str,
+    environment: Mapping[str, str],
+) -> dict[str, Any]:
+    result = _run_metadata_command(
+        (
+            str(docker_cli),
+            f"--host={docker_host}",
             "image",
             "inspect",
             policy.image_ref,
-        )
+        ),
+        environment=environment,
     )
     try:
         payload = json.loads(result.stdout.decode("utf-8"))
@@ -547,6 +710,7 @@ def _inspect_image(policy: DockerIsolationPolicy) -> dict[str, Any]:
     record = payload[0]
     image_id = record.get("Id")
     image_os = record.get("Os")
+    image_architecture = record.get("Architecture")
     config = record.get("Config")
     repo_digests = record.get("RepoDigests")
     if (
@@ -556,6 +720,8 @@ def _inspect_image(policy: DockerIsolationPolicy) -> dict[str, Any]:
         raise DockerBackendError("Docker image inspection omitted a full image ID")
     if (
         image_os != "linux"
+        or not isinstance(image_architecture, str)
+        or not image_architecture
         or not isinstance(config, dict)
         or not isinstance(repo_digests, list)
     ):
@@ -567,8 +733,11 @@ def _inspect_image(policy: DockerIsolationPolicy) -> dict[str, Any]:
     ):
         raise DockerBackendError("local Docker image does not match the policy digest")
     image_environment = config.get("Env")
+    image_volumes = config.get("Volumes")
     if not isinstance(image_environment, list):
         raise DockerBackendError("Docker image environment is not explicit")
+    if image_volumes not in (None, {}):
+        raise DockerBackendError("Docker image declares uncontrolled volumes")
     environment_keys = []
     for item in image_environment:
         if not isinstance(item, str) or "=" not in item:
@@ -579,13 +748,25 @@ def _inspect_image(policy: DockerIsolationPolicy) -> dict[str, Any]:
     return {
         "id": image_id,
         "os": image_os,
+        "architecture": image_architecture,
         "environment_keys": tuple(sorted(environment_keys)),
     }
 
 
-def _inspect_engine() -> dict[str, Any]:
+def _inspect_engine(
+    docker_cli: Path,
+    docker_host: str,
+    environment: Mapping[str, str],
+) -> dict[str, Any]:
     result = _run_metadata_command(
-        ("docker", "version", "--format", "{{json .Server}}")
+        (
+            str(docker_cli),
+            f"--host={docker_host}",
+            "version",
+            "--format",
+            "{{json .Server}}",
+        ),
+        environment=environment,
     )
     try:
         payload = json.loads(result.stdout.decode("utf-8"))
@@ -602,7 +783,16 @@ def _inspect_engine() -> dict[str, Any]:
         isinstance(value, str) and value for value in (version, engine_os, architecture)
     ):
         raise DockerBackendError("Docker engine inspection omitted required fields")
-    info_result = _run_metadata_command(("docker", "info", "--format", "{{json .}}"))
+    info_result = _run_metadata_command(
+        (
+            str(docker_cli),
+            f"--host={docker_host}",
+            "info",
+            "--format",
+            "{{json .}}",
+        ),
+        environment=environment,
+    )
     try:
         info = json.loads(info_result.stdout.decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError) as error:
@@ -633,13 +823,18 @@ def _inspect_engine() -> dict[str, Any]:
     }
 
 
-def _run_metadata_command(command: tuple[str, ...]) -> _CommandResult:
+def _run_metadata_command(
+    command: tuple[str, ...],
+    *,
+    environment: Mapping[str, str],
+) -> _CommandResult:
     try:
         completed = subprocess.run(
             command,
             check=False,
             capture_output=True,
             timeout=10,
+            env=dict(environment),
         )
     except (OSError, subprocess.TimeoutExpired) as error:
         raise DockerBackendUnavailable("local Docker engine is unavailable") from error
@@ -657,6 +852,7 @@ def _run_bounded_command(
     input_bytes: bytes,
     max_output_bytes: int,
     timeout_seconds: int,
+    environment: Mapping[str, str] | None = None,
 ) -> _CommandResult:
     try:
         process = subprocess.Popen(
@@ -666,6 +862,7 @@ def _run_bounded_command(
             stderr=subprocess.PIPE,
             start_new_session=True,
             close_fds=True,
+            env=None if environment is None else dict(environment),
         )
     except OSError as error:
         raise DockerBackendUnavailable("could not start the Docker CLI") from error
@@ -738,14 +935,26 @@ def _kill_process_group(process: subprocess.Popen[bytes]) -> None:
         pass
 
 
-def _force_remove_container(container_name: str) -> None:
+def _force_remove_container(
+    container_name: str,
+    docker_cli: Path,
+    docker_host: str,
+    environment: Mapping[str, str],
+) -> None:
     try:
         subprocess.run(
-            ("docker", "rm", "--force", container_name),
+            (
+                str(docker_cli),
+                f"--host={docker_host}",
+                "rm",
+                "--force",
+                container_name,
+            ),
             check=False,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             timeout=10,
+            env=dict(environment),
         )
     except (OSError, subprocess.TimeoutExpired):
         pass
@@ -758,16 +967,37 @@ def _build_docker_findings(
     export_decision: ExportDecision,
     image_environment_keys: tuple[str, ...],
     image_os: str,
+    image_architecture: str,
     engine_os: str,
+    engine_architecture: str,
     engine_security_options: tuple[str, ...],
     engine_cgroup_version: str,
     engine_storage_driver: str,
+    engine_version: str,
+    observed_probe_sha256: str,
+    expected_probe_sha256: str,
 ) -> tuple[IsolationFinding, ...]:
-    workspace_confined = (
-        not response.outside_write_succeeded and not response.root_write_succeeded
+    workspace_confined = all(
+        (
+            not response.outside_write_succeeded,
+            not response.root_write_succeeded,
+            response.workspace_write_succeeded,
+            response.root_mount_read_only is True,
+            response.workspace_mount_read_only is False,
+            response.export_mount_read_only is False,
+            response.tmp_noexec is True,
+            response.tmp_nosuid is True,
+            response.tmp_nodev is True,
+        )
     )
     history_hidden = response.history_sha256 is None
-    verifier_protected = not response.verifier_mutation_succeeded
+    verifier_protected = all(
+        (
+            not response.verifier_mutation_succeeded,
+            response.probe_mount_read_only is True,
+            observed_probe_sha256 == expected_probe_sha256,
+        )
+    )
     credential_hidden = response.credential_sha256 is None
     network_denied = (
         not response.network_connection_succeeded
@@ -792,21 +1022,40 @@ def _build_docker_findings(
             response.limit_core == (0, 0),
         )
     )
-    unprivileged = (
-        response.identity_uid == policy.user_uid
-        and response.identity_gid == policy.user_gid
+    unprivileged = all(
+        (
+            response.identity_uid == policy.user_uid,
+            response.identity_gid == policy.user_gid,
+            response.capability_effective == "0000000000000000",
+            response.no_new_privileges == 1,
+        )
     )
     kernel_isolated = all(
         (
             image_os == "linux",
+            image_architecture == engine_architecture,
             engine_os == "linux",
+            _engine_version_supported(engine_version, policy),
+            _engine_lsm_supported(
+                engine_architecture,
+                engine_security_options,
+            ),
             "name=seccomp,profile=builtin" in engine_security_options,
             "name=cgroupns" in engine_security_options,
             engine_cgroup_version == "2",
             bool(engine_storage_driver),
+            response.seccomp_mode == 2,
+            (response.seccomp_filters or 0) >= 1,
+            response.root_mount_read_only is True,
         )
     )
-    credential_broker_isolated = credential_hidden and workspace_confined
+    credential_broker_isolated = all(
+        (
+            credential_hidden,
+            workspace_confined,
+            not response.sensitive_paths_visible,
+        )
+    )
     observations: Mapping[
         IsolationControl, tuple[ControlStatus, str, Mapping[str, Any]]
     ] = {
@@ -817,6 +1066,17 @@ def _build_docker_findings(
             {
                 "outside_write_succeeded": response.outside_write_succeeded,
                 "root_write_succeeded": response.root_write_succeeded,
+                "workspace_write_succeeded": response.workspace_write_succeeded,
+                "root_mount_read_only": response.root_mount_read_only,
+                "workspace_mount_read_only": response.workspace_mount_read_only,
+                "export_mount_read_only": response.export_mount_read_only,
+                "tmp_hardening": all(
+                    (
+                        response.tmp_noexec is True,
+                        response.tmp_nosuid is True,
+                        response.tmp_nodev is True,
+                    )
+                ),
             },
         ),
         IsolationControl.HISTORY_HIDDEN: _finding_observation(
@@ -829,7 +1089,11 @@ def _build_docker_findings(
             verifier_protected,
             "trusted verifier path was not writable",
             "trusted verifier path was writable",
-            {"verifier_protected": verifier_protected},
+            {
+                "verifier_protected": verifier_protected,
+                "probe_mount_read_only": response.probe_mount_read_only,
+                "probe_copy_unchanged": observed_probe_sha256 == expected_probe_sha256,
+            },
         ),
         IsolationControl.CREDENTIAL_SENTINEL_HIDDEN: _finding_observation(
             credential_hidden,
@@ -896,7 +1160,12 @@ def _build_docker_findings(
             unprivileged,
             "container used the configured non-root UID and GID",
             "container identity did not match policy",
-            {"uid": response.identity_uid, "gid": response.identity_gid},
+            {
+                "uid": response.identity_uid,
+                "gid": response.identity_gid,
+                "capability_effective": response.capability_effective,
+                "no_new_privileges": response.no_new_privileges,
+            },
         ),
         IsolationControl.KERNEL_ISOLATION: _finding_observation(
             kernel_isolated,
@@ -904,10 +1173,18 @@ def _build_docker_findings(
             "probe did not execute through the required Linux Docker engine",
             {
                 "image_os": image_os,
+                "image_architecture": image_architecture,
                 "engine_os": engine_os,
+                "engine_architecture": engine_architecture,
+                "engine_version": engine_version,
+                "required_engine_major": policy.required_engine_major,
+                "minimum_engine_version": policy.minimum_engine_version,
                 "security_options": list(engine_security_options),
                 "cgroup_version": engine_cgroup_version,
                 "storage_driver": engine_storage_driver,
+                "seccomp_mode": response.seccomp_mode,
+                "seccomp_filters": response.seccomp_filters,
+                "root_mount_read_only": response.root_mount_read_only,
             },
         ),
         IsolationControl.HOST_CREDENTIAL_BROKER_ISOLATION: _finding_observation(
@@ -917,6 +1194,7 @@ def _build_docker_findings(
             {
                 "credential_hidden": credential_hidden,
                 "workspace_confined": workspace_confined,
+                "sensitive_path_labels": list(response.sensitive_paths_visible),
             },
         ),
         IsolationControl.INDEPENDENT_REVIEW: (
@@ -961,6 +1239,75 @@ def _require_digest_image(value: str) -> None:
         or re.fullmatch(r"[0-9a-f]{64}", digest) is None
     ):
         raise ValueError("image_ref must be a canonical digest-pinned image reference")
+
+
+def _require_docker_executable(value: str) -> None:
+    if value == "docker":
+        return
+    if (
+        not isinstance(value, str)
+        or not value.startswith("/")
+        or any(character in value for character in (",", "\n", "\r", "\x00"))
+    ):
+        raise ValueError("docker_executable must be 'docker' or an absolute safe path")
+
+
+def _require_local_docker_host(value: str) -> None:
+    if value == LOCAL_DOCKER_HOST_PLACEHOLDER:
+        return
+    if (
+        not isinstance(value, str)
+        or not value.startswith("unix:///")
+        or any(character in value for character in (",", "\n", "\r", "\x00"))
+    ):
+        raise ValueError("docker_host must identify an absolute local Unix socket")
+    path = Path(value.removeprefix("unix://"))
+    if not path.is_absolute() or ".." in path.parts:
+        raise ValueError("docker_host must identify an absolute local Unix socket")
+
+
+def _parse_engine_version(value: str) -> tuple[int, int, int]:
+    if not isinstance(value, str):
+        raise ValueError("engine version must be a string")
+    matched = re.fullmatch(
+        r"([0-9]+)\.([0-9]+)\.([0-9]+)(?:[-+][A-Za-z0-9._-]+)?", value
+    )
+    if matched is None:
+        raise ValueError("engine version must contain three numeric components")
+    return tuple(int(component) for component in matched.groups())
+
+
+def _engine_version_at_least(observed: str, minimum: str) -> bool:
+    try:
+        return _parse_engine_version(observed) >= _parse_engine_version(minimum)
+    except ValueError:
+        return False
+
+
+def _engine_version_supported(
+    observed: str,
+    policy: DockerIsolationPolicy,
+) -> bool:
+    try:
+        parsed = _parse_engine_version(observed)
+    except ValueError:
+        return False
+    return parsed[
+        0
+    ] == policy.required_engine_major and parsed >= _parse_engine_version(
+        policy.minimum_engine_version
+    )
+
+
+def _engine_lsm_supported(
+    architecture: str,
+    security_options: tuple[str, ...],
+) -> bool:
+    if architecture in {"arm64", "aarch64"}:
+        return True
+    return any(
+        option in {"name=apparmor", "name=selinux"} for option in security_options
+    )
 
 
 def _sequence_digest(values: tuple[str, ...]) -> str:

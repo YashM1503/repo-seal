@@ -48,6 +48,7 @@ PYTHONPATH=src python -m repolab_reference isolation-preflight /tmp/repolab-isol
 PYTHONPATH=src python -m repolab_reference docker-isolation-plan /tmp/repolab-docker-plan
 # Requires Docker and the exact image digest documented below.
 PYTHONPATH=src python -m repolab_reference docker-isolation-preflight /tmp/repolab-docker-preflight
+PYTHONPATH=src python -m repolab_reference security-review-bundle . /tmp/repolab-security-review
 ```
 
 ## Current milestone
@@ -60,13 +61,13 @@ PYTHONPATH=src python -m repolab_reference docker-isolation-preflight /tmp/repol
 
 **M2b preflight complete:** an active host-process negative control demonstrates that the isolation probe harness detects filesystem escape, history and sentinel exposure, verifier mutation, cache leakage, and unauthorized output. The preflight cannot approve a backend and keeps the real-agent security gate closed. See [M2b isolation preflight](docs/m2b-isolation-preflight.md).
 
-**M2b Docker backend complete:** the same trusted probe now runs in a disposable, digest-pinned Docker container with a read-only root, no network, three controlled mounts, a non-root identity, dropped capabilities, and bounded CPU, memory, processes, files, output, and wall time. The tested backend passes every technical control. Independent review remains `UNAVAILABLE`, so `security_gate_passed` and `safe_for_real_agents` remain false. See [M2b Docker backend](docs/m2b-docker-backend.md).
+**M2b Docker backend hardened:** the trusted probe has a digest-pinned Docker policy with a read-only root, no network, three controlled mounts, a non-root identity, measured runtime restrictions, and bounded resources and output. The internal security review added an explicit local-daemon boundary, non-recursive binds, an Engine 29.4.3–29.x security range, image-volume rejection, and a deterministic independent-review handoff. The local Engine 29.2.1 is now rejected because its kernel patch status cannot be proven. Independent review remains `UNAVAILABLE`, so `security_gate_passed` and `safe_for_real_agents` remain false. See [M2b Docker backend](docs/m2b-docker-backend.md) and [internal security review](docs/security/m2b-internal-review-2026-08-10.md).
 
 The runners execute only built-in controlled fixture code and the trusted mock adapter; they are not active scanners or sandboxes for arbitrary repositories or real agents.
 
 ## Next gate
 
-The next gate is an **independent security review of the M2b Docker execution boundary**. Review must cover the command policy, mount topology, daemon threat model, active probes, export validator, cleanup paths, and CI evidence. One real agent adapter may be considered for M2c only after the review passes and the security gate can close; the current Docker command must not be repurposed to execute an agent.
+The next gate is an **independent security review of the exact M2b scope digest**, using the generated handoff bundle. Before review, the execution environment must also meet the Engine security floor and the open image-provenance and runtime-containment findings must be closed or explicitly accepted. One real agent adapter may be considered for M2c only after that review passes; the current Docker command must not be repurposed to execute an agent.
 
 ## Evidence
 
@@ -77,6 +78,7 @@ The next gate is an **independent security review of the M2b Docker execution bo
 - [M2a controlled agent boundary](docs/m2a-controlled-agent-boundary.md)
 - [M2b isolation preflight](docs/m2b-isolation-preflight.md)
 - [M2b Docker backend](docs/m2b-docker-backend.md)
+- [M2b internal security review](docs/security/m2b-internal-review-2026-08-10.md)
 - [Stet methodology](https://www.stet.sh/methodology)
 - [OpenAI: Separating signal from noise in coding evaluations](https://openai.com/index/separating-signal-from-noise-coding-evaluations/)
 - [SWE-smith](https://github.com/SWE-bench/SWE-smith)

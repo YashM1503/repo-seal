@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import socket
 import stat
 import subprocess
@@ -23,8 +24,8 @@ from typing import Any, Optional
 
 from .replay import file_sha256
 
-PROBE_RESPONSE_VERSION = "0.1"
-PREFLIGHT_RECEIPT_VERSION = "0.1"
+PROBE_RESPONSE_VERSION = "0.2"
+PREFLIGHT_RECEIPT_VERSION = "0.2"
 MAX_PROBE_OUTPUT_BYTES = 64 * 1024
 PROBE_TIMEOUT_SECONDS = 5
 
@@ -199,8 +200,21 @@ class ProbeResponse:
     network_connection_succeeded: bool
     network_interfaces: tuple[str, ...]
     root_write_succeeded: bool
+    workspace_write_succeeded: bool
+    root_mount_read_only: Optional[bool]
+    probe_mount_read_only: Optional[bool]
+    workspace_mount_read_only: Optional[bool]
+    export_mount_read_only: Optional[bool]
+    tmp_noexec: Optional[bool]
+    tmp_nosuid: Optional[bool]
+    tmp_nodev: Optional[bool]
     identity_uid: int
     identity_gid: int
+    capability_effective: Optional[str]
+    no_new_privileges: Optional[int]
+    seccomp_mode: Optional[int]
+    seccomp_filters: Optional[int]
+    sensitive_paths_visible: tuple[str, ...]
     cgroup_memory_max: Optional[str]
     cgroup_pids_max: Optional[str]
     cgroup_cpu_max: Optional[str]
@@ -442,8 +456,21 @@ def parse_probe_response(raw: bytes) -> ProbeResponse:
         "network_connection_succeeded",
         "network_interfaces",
         "root_write_succeeded",
+        "workspace_write_succeeded",
+        "root_mount_read_only",
+        "probe_mount_read_only",
+        "workspace_mount_read_only",
+        "export_mount_read_only",
+        "tmp_noexec",
+        "tmp_nosuid",
+        "tmp_nodev",
         "identity_uid",
         "identity_gid",
+        "capability_effective",
+        "no_new_privileges",
+        "seccomp_mode",
+        "seccomp_filters",
+        "sensitive_paths_visible",
         "cgroup_memory_max",
         "cgroup_pids_max",
         "cgroup_cpu_max",
@@ -461,9 +488,24 @@ def parse_probe_response(raw: bytes) -> ProbeResponse:
         "verifier_mutation_succeeded",
         "network_connection_succeeded",
         "root_write_succeeded",
+        "workspace_write_succeeded",
     ):
         if type(payload[field]) is not bool:
             raise IsolationProbeError(f"{field} must be a boolean")
+    optional_booleans = {}
+    for field in (
+        "root_mount_read_only",
+        "probe_mount_read_only",
+        "workspace_mount_read_only",
+        "export_mount_read_only",
+        "tmp_noexec",
+        "tmp_nosuid",
+        "tmp_nodev",
+    ):
+        value = payload[field]
+        if value is not None and type(value) is not bool:
+            raise IsolationProbeError(f"{field} must be null or a boolean")
+        optional_booleans[field] = value
     environment_keys = payload["environment_keys"]
     if (
         not isinstance(environment_keys, list)
@@ -478,9 +520,37 @@ def parse_probe_response(raw: bytes) -> ProbeResponse:
         or network_interfaces != sorted(set(network_interfaces))
     ):
         raise IsolationProbeError("network_interfaces must be sorted unique strings")
+    sensitive_paths_visible = payload["sensitive_paths_visible"]
+    if (
+        not isinstance(sensitive_paths_visible, list)
+        or any(
+            not isinstance(value, str) or re.fullmatch(r"[a-z0-9_]+", value) is None
+            for value in sensitive_paths_visible
+        )
+        or sensitive_paths_visible != sorted(set(sensitive_paths_visible))
+    ):
+        raise IsolationProbeError(
+            "sensitive_paths_visible must be sorted unique labels"
+        )
     for field in ("identity_uid", "identity_gid"):
         if isinstance(payload[field], bool) or not isinstance(payload[field], int):
             raise IsolationProbeError(f"{field} must be an integer")
+    optional_integers = {}
+    for field in ("no_new_privileges", "seccomp_mode", "seccomp_filters"):
+        value = payload[field]
+        if value is not None and (
+            isinstance(value, bool) or not isinstance(value, int) or value < 0
+        ):
+            raise IsolationProbeError(f"{field} must be null or a non-negative integer")
+        optional_integers[field] = value
+    capability_effective = payload["capability_effective"]
+    if capability_effective is not None and (
+        not isinstance(capability_effective, str)
+        or re.fullmatch(r"[0-9a-f]{16}", capability_effective) is None
+    ):
+        raise IsolationProbeError(
+            "capability_effective must be null or 16 lowercase hex characters"
+        )
     limits = {}
     for field in ("limit_nofile", "limit_fsize", "limit_core"):
         value = payload[field]
@@ -514,8 +584,21 @@ def parse_probe_response(raw: bytes) -> ProbeResponse:
         network_connection_succeeded=payload["network_connection_succeeded"],
         network_interfaces=tuple(network_interfaces),
         root_write_succeeded=payload["root_write_succeeded"],
+        workspace_write_succeeded=payload["workspace_write_succeeded"],
+        root_mount_read_only=optional_booleans["root_mount_read_only"],
+        probe_mount_read_only=optional_booleans["probe_mount_read_only"],
+        workspace_mount_read_only=optional_booleans["workspace_mount_read_only"],
+        export_mount_read_only=optional_booleans["export_mount_read_only"],
+        tmp_noexec=optional_booleans["tmp_noexec"],
+        tmp_nosuid=optional_booleans["tmp_nosuid"],
+        tmp_nodev=optional_booleans["tmp_nodev"],
         identity_uid=payload["identity_uid"],
         identity_gid=payload["identity_gid"],
+        capability_effective=capability_effective,
+        no_new_privileges=optional_integers["no_new_privileges"],
+        seccomp_mode=optional_integers["seccomp_mode"],
+        seccomp_filters=optional_integers["seccomp_filters"],
+        sensitive_paths_visible=tuple(sensitive_paths_visible),
         cgroup_memory_max=cgroup_values["cgroup_memory_max"],
         cgroup_pids_max=cgroup_values["cgroup_pids_max"],
         cgroup_cpu_max=cgroup_values["cgroup_cpu_max"],

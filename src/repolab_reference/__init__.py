@@ -73,6 +73,12 @@ from .replay import (
     snapshot_commit,
     tree_sha256,
 )
+from .review_bundle import (
+    REVIEW_SCOPE_PATHS,
+    ReviewedFile,
+    SecurityReviewBundleReceipt,
+    create_security_review_bundle,
+)
 from .schemas import (
     AgentConfiguration,
     DecisionReceipt,
@@ -85,6 +91,7 @@ from .schemas import (
 __all__ = [
     "DEFAULT_DOCKER_PROBE_IMAGE",
     "REQUIRED_CONTROLS",
+    "REVIEW_SCOPE_PATHS",
     "TASK_DEFINITIONS",
     "AgentBoundaryError",
     "AgentConfiguration",
@@ -119,6 +126,8 @@ __all__ = [
     "ReplayReceipt",
     "ReplaySuiteReceipt",
     "ReplayTask",
+    "ReviewedFile",
+    "SecurityReviewBundleReceipt",
     "SnapshotSecurityError",
     "SourceFile",
     "TaskManifest",
@@ -132,6 +141,7 @@ __all__ = [
     "check_fixture",
     "controlled_isolation_probe_path",
     "controlled_mock_adapter_path",
+    "create_security_review_bundle",
     "docker_isolation_plan",
     "evaluate_export",
     "falsify",
@@ -150,4 +160,4 @@ __all__ = [
     "write_trusted_verifier",
 ]
 
-__version__ = "0.5.0"
+__version__ = "0.6.0"

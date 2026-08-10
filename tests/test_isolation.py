@@ -169,7 +169,7 @@ class ExportPolicyTests(unittest.TestCase):
 class ProbeResponseParsingTests(unittest.TestCase):
     def valid_payload(self):
         return {
-            "response_version": "0.1",
+            "response_version": "0.2",
             "history_sha256": "sha256:" + "a" * 64,
             "credential_sha256": "sha256:" + "b" * 64,
             "foreign_cache_sha256": None,
@@ -178,8 +178,21 @@ class ProbeResponseParsingTests(unittest.TestCase):
             "network_connection_succeeded": False,
             "network_interfaces": ["lo"],
             "root_write_succeeded": False,
+            "workspace_write_succeeded": True,
+            "root_mount_read_only": True,
+            "probe_mount_read_only": True,
+            "workspace_mount_read_only": False,
+            "export_mount_read_only": False,
+            "tmp_noexec": True,
+            "tmp_nosuid": True,
+            "tmp_nodev": True,
             "identity_uid": 65532,
             "identity_gid": 65532,
+            "capability_effective": "0000000000000000",
+            "no_new_privileges": 1,
+            "seccomp_mode": 2,
+            "seccomp_filters": 1,
+            "sensitive_paths_visible": [],
             "cgroup_memory_max": "268435456",
             "cgroup_pids_max": "32",
             "cgroup_cpu_max": "50000 100000",
@@ -219,9 +232,24 @@ class ProbeResponseParsingTests(unittest.TestCase):
         with self.assertRaisesRegex(IsolationProbeError, "sorted unique"):
             self.parse(payload)
 
+        payload = self.valid_payload()
+        payload["capability_effective"] = "CAP_SYS_ADMIN"
+        with self.assertRaisesRegex(IsolationProbeError, "lowercase hex"):
+            self.parse(payload)
+
+        payload = self.valid_payload()
+        payload["root_mount_read_only"] = "true"
+        with self.assertRaisesRegex(IsolationProbeError, "null or a boolean"):
+            self.parse(payload)
+
+        payload = self.valid_payload()
+        payload["sensitive_paths_visible"] = ["/var/run/docker.sock"]
+        with self.assertRaisesRegex(IsolationProbeError, "unique labels"):
+            self.parse(payload)
+
     def test_duplicate_json_fields_are_rejected(self) -> None:
         raw = json.dumps(self.valid_payload(), sort_keys=True).encode("utf-8")
-        duplicate = raw[:-1] + b',"response_version":"0.1"}'
+        duplicate = raw[:-1] + b',"response_version":"0.2"}'
 
         with self.assertRaisesRegex(IsolationProbeError, "duplicate"):
             parse_probe_response(duplicate)

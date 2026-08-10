@@ -48,10 +48,32 @@ jobs:
       - name: Check M2b Docker policy receipt
         run: python -m repolab_reference docker-isolation-plan "$RUNNER_TEMP/repolab-docker-plan"
 
+    env:
+      PYTHONPATH: src
+      PYTHONDONTWRITEBYTECODE: "1"
+
+  docker-isolation:
+    name: Hardened Docker isolation
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.13"
+
+      - name: Build independent-review handoff
+        run: python -m repolab_reference security-review-bundle . "$RUNNER_TEMP/repolab-security-review"
+
       - name: Pull pinned M2b probe image
         run: docker pull "docker.io/library/python@sha256:399babc8b49529dabfd9c922f2b5eea81d611e4512e3ed250d75bd2e7683f4b0"
 
-      - name: Run M2b Docker isolation preflight
+      - name: Run hardened M2b Docker isolation preflight
         env:
           REPOLAB_RUN_DOCKER_INTEGRATION: "1"
         run: |

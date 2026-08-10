@@ -20,6 +20,7 @@ from .docker_backend import (
 from .falsification import check_fixture, iter_fixture_paths
 from .isolation import IsolationProbeError, run_host_process_negative_control
 from .replay import ReplayError, replay_suite
+from .review_bundle import create_security_review_bundle
 
 
 def main(argv: Optional[List[str]] = None) -> int:
@@ -61,6 +62,13 @@ def main(argv: Optional[List[str]] = None) -> int:
         help="run the trusted M2b probe in the pinned local Docker image",
     )
     docker_probe_parser.add_argument("output_directory", type=Path)
+
+    review_parser = subparsers.add_parser(
+        "security-review-bundle",
+        help="create a deterministic handoff for independent M2b review",
+    )
+    review_parser.add_argument("repository_root", type=Path)
+    review_parser.add_argument("output_directory", type=Path)
     arguments = parser.parse_args(argv)
 
     if arguments.command == "check-fixtures":
@@ -75,6 +83,11 @@ def main(argv: Optional[List[str]] = None) -> int:
         return _docker_isolation_plan(arguments.output_directory)
     if arguments.command == "docker-isolation-preflight":
         return _docker_isolation_preflight(arguments.output_directory)
+    if arguments.command == "security-review-bundle":
+        return _security_review_bundle(
+            arguments.repository_root,
+            arguments.output_directory,
+        )
     parser.error(f"unsupported command: {arguments.command}")
     return 2
 
@@ -254,6 +267,25 @@ def _docker_isolation_preflight(output_directory: Path) -> int:
         return 0 if expected_outcome else 1
     except (DockerBackendError, OSError, ValueError) as error:
         print(f"Docker isolation preflight failed: {error}", file=sys.stderr)
+        return 1
+
+
+def _security_review_bundle(
+    repository_root: Path,
+    output_directory: Path,
+) -> int:
+    try:
+        receipt = create_security_review_bundle(repository_root, output_directory)
+        rendered = receipt.to_json()
+        print(rendered)
+        expected_outcome = (
+            receipt.independent_review_status == "NOT_PERFORMED"
+            and not receipt.security_gate_passed
+            and not receipt.safe_for_real_agents
+        )
+        return 0 if expected_outcome else 1
+    except (OSError, ValueError) as error:
+        print(f"security review bundle failed: {error}", file=sys.stderr)
         return 1
 
 

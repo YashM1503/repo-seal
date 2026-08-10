@@ -87,6 +87,6 @@ The next M2b slice now executes the same probes inside a disposable, digest-pinn
 8. immutable backend and policy digests in the receipt;
 9. independent security review before the real-agent flag can change.
 
-The implementation and its live evidence are documented in [M2b Docker backend](m2b-docker-backend.md). All technical controls pass in the tested backend, while independent review remains `UNAVAILABLE`; this leaves the security gate closed and the backend unsafe for real agents by policy.
+The implementation and its evidence are documented in [M2b Docker backend](m2b-docker-backend.md). An internal security review superseded the first live proof with policy 0.2 and an Engine 29.4.3–29.x security range. The local Engine 29.2.1 is now rejected before container creation, and new passing live evidence requires an upgraded engine. Independent review remains `UNAVAILABLE`; this leaves the security gate closed and the backend unsafe for real agents by policy.
 
 The host negative control remains in CI so probe regressions cannot silently turn missing isolation into passing evidence.

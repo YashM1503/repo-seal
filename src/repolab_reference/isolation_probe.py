@@ -24,6 +24,52 @@ def _read_text(path):
         return None
 
 
+def _proc_status_value(name):
+    content = _read_text("/proc/self/status")
+    if content is None:
+        return None
+    prefix = name + ":"
+    for line in content.splitlines():
+        if line.startswith(prefix):
+            return line.removeprefix(prefix).strip()
+    return None
+
+
+def _proc_status_integer(name):
+    value = _proc_status_value(name)
+    try:
+        return int(value) if value is not None else None
+    except ValueError:
+        return None
+
+
+def _mount_options(target):
+    content = _read_text("/proc/self/mountinfo")
+    if content is None:
+        return None
+    for line in content.splitlines():
+        fields = line.split()
+        if len(fields) >= 6 and fields[4] == target:
+            return sorted(set(fields[5].split(",")))
+    return None
+
+
+def _mount_has_option(target, option):
+    options = _mount_options(target)
+    return option in options if options is not None else None
+
+
+def _visible_sensitive_paths():
+    candidates = {
+        "docker_socket": "/var/run/docker.sock",
+        "docker_socket_run": "/run/docker.sock",
+        "docker_desktop_backend": "/run/host-services/backend.sock",
+        "docker_desktop_ssh": "/run/host-services/ssh-auth.sock",
+        "runtime_secrets": "/run/secrets",
+    }
+    return sorted(label for label, path in candidates.items() if os.path.lexists(path))
+
+
 def _network_interfaces():
     try:
         interfaces = []
@@ -78,7 +124,7 @@ def main():
     (export_directory / "extra.txt").write_text("unauthorized\n", encoding="utf-8")
 
     response = {
-        "response_version": "0.1",
+        "response_version": "0.2",
         "history_sha256": _file_sha256(request["history_sentinel"]),
         "credential_sha256": _file_sha256(request["credential_sentinel"]),
         "foreign_cache_sha256": _file_sha256(request["foreign_cache_sentinel"]),
@@ -97,8 +143,23 @@ def main():
         "root_write_succeeded": _attempt_write(
             "/repolab-root-write-sentinel", "root changed\n"
         ),
+        "workspace_write_succeeded": _attempt_write(
+            "/workspace/repolab-workspace-write-sentinel", "workspace changed\n"
+        ),
+        "root_mount_read_only": _mount_has_option("/", "ro"),
+        "probe_mount_read_only": _mount_has_option("/repolab-isolation-probe.py", "ro"),
+        "workspace_mount_read_only": _mount_has_option("/workspace", "ro"),
+        "export_mount_read_only": _mount_has_option("/export", "ro"),
+        "tmp_noexec": _mount_has_option("/tmp", "noexec"),
+        "tmp_nosuid": _mount_has_option("/tmp", "nosuid"),
+        "tmp_nodev": _mount_has_option("/tmp", "nodev"),
         "identity_uid": os.getuid(),
         "identity_gid": os.getgid(),
+        "capability_effective": _proc_status_value("CapEff"),
+        "no_new_privileges": _proc_status_integer("NoNewPrivs"),
+        "seccomp_mode": _proc_status_integer("Seccomp"),
+        "seccomp_filters": _proc_status_integer("Seccomp_filters"),
+        "sensitive_paths_visible": _visible_sensitive_paths(),
         "cgroup_memory_max": _read_text("/sys/fs/cgroup/memory.max"),
         "cgroup_pids_max": _read_text("/sys/fs/cgroup/pids.max"),
         "cgroup_cpu_max": _read_text("/sys/fs/cgroup/cpu.max"),
