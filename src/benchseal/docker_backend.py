@@ -50,7 +50,7 @@ EXPLICIT_CONTAINER_ENVIRONMENT: Mapping[str, str] = {
     "TZ": "UTC",
 }
 
-PROBE_CONTAINER_PATH = "/repolab-isolation-probe.py"
+PROBE_CONTAINER_PATH = "/benchseal-isolation-probe.py"
 LOCAL_DOCKER_HOST_PLACEHOLDER = "<local-unix-socket>"
 
 
@@ -325,7 +325,7 @@ def build_docker_command(
             raise ValueError(f"{name} must be an absolute path")
         if any(character in str(path) for character in (",", "\n", "\r")):
             raise ValueError(f"{name} contains a character unsafe for Docker mounts")
-    if re.fullmatch(r"repolab-probe-[0-9a-f]{32}", container_name) is None:
+    if re.fullmatch(r"benchseal-probe-[0-9a-f]{32}", container_name) is None:
         raise ValueError("container_name must use the controlled format")
     _require_docker_executable(docker_executable)
     _require_local_docker_host(docker_host)
@@ -395,7 +395,7 @@ def run_docker_isolation_preflight(
     if file_sha256(probe_source) != expected_probe_sha256:
         raise DockerBackendError("trusted isolation probe copy did not match source")
 
-    container_name = "repolab-probe-" + uuid.uuid4().hex
+    container_name = "benchseal-probe-" + uuid.uuid4().hex
     command = build_docker_command(
         policy,
         probe_source=probe_source,
@@ -499,7 +499,7 @@ def _docker_command(
         "--init",
         "--interactive",
         f"--name={container_name}",
-        "--hostname=repolab-probe",
+        "--hostname=benchseal-probe",
         "--read-only",
         "--network=none",
         "--ipc=none",

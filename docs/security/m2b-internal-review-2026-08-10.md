@@ -8,7 +8,7 @@ Scope: the M2b Docker command policy, Docker client and daemon selection, image 
 
 ## Threat model
 
-The future adversary is repository content, task text, dependencies, and an agent process. The trusted computing base currently includes the host user account, local Docker CLI, selected local Docker daemon, daemon runtime and kernel, digest-pinned image, RepoLab orchestrator, trusted probe, export validator, and independent reviewer. A hostile host administrator or code already executing as the orchestrator user is out of scope.
+The future adversary is repository content, task text, dependencies, and an agent process. The trusted computing base currently includes the host user account, local Docker CLI, selected local Docker daemon, daemon runtime and kernel, digest-pinned image, BenchSeal orchestrator, trusted probe, export validator, and independent reviewer. A hostile host administrator or code already executing as the orchestrator user is out of scope.
 
 The current command executes only the trusted probe. This review does not authorize substituting an agent or repository command.
 

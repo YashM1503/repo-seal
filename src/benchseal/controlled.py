@@ -263,10 +263,10 @@ def _commit(repository: Path, message: str, sequence: int) -> None:
     environment = os.environ.copy()
     environment.update(
         {
-            "GIT_AUTHOR_NAME": "RepoLab Fixture",
+            "GIT_AUTHOR_NAME": "BenchSeal Fixture",
             "GIT_AUTHOR_EMAIL": "fixture@example.invalid",
             "GIT_AUTHOR_DATE": timestamp,
-            "GIT_COMMITTER_NAME": "RepoLab Fixture",
+            "GIT_COMMITTER_NAME": "BenchSeal Fixture",
             "GIT_COMMITTER_EMAIL": "fixture@example.invalid",
             "GIT_COMMITTER_DATE": timestamp,
         }

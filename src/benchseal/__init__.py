@@ -1,4 +1,4 @@
-"""Reference primitives for repository-derived coding-agent evaluations."""
+"""BenchSeal task-evidence validation and research primitives."""
 
 from .agent_boundary import (
     AgentBoundaryError,
@@ -38,6 +38,7 @@ from .docker_backend import (
     docker_isolation_plan,
     run_docker_isolation_preflight,
 )
+from .evidence import TaskEvidenceReport, validate_evidence_file
 from .falsification import (
     FalsificationEvidence,
     FalsificationFixture,
@@ -87,6 +88,7 @@ from .schemas import (
     TaskQualityRecord,
     ValidationCode,
 )
+from .version import __version__
 
 __all__ = [
     "DEFAULT_DOCKER_PROBE_IMAGE",
@@ -130,10 +132,12 @@ __all__ = [
     "SecurityReviewBundleReceipt",
     "SnapshotSecurityError",
     "SourceFile",
+    "TaskEvidenceReport",
     "TaskManifest",
     "TaskQualityRecord",
     "ValidationCode",
     "VerificationRun",
+    "__version__",
     "apply_patch_artifact",
     "build_controlled_repository",
     "build_docker_command",
@@ -156,8 +160,7 @@ __all__ = [
     "run_host_process_negative_control",
     "snapshot_commit",
     "tree_sha256",
+    "validate_evidence_file",
     "validate_patch_artifact",
     "write_trusted_verifier",
 ]
-
-__version__ = "0.6.0"

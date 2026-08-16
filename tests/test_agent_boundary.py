@@ -7,7 +7,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
-from repolab_reference.agent_boundary import (
+from benchseal.agent_boundary import (
     AgentBoundaryError,
     PatchValidationError,
     apply_patch_artifact,
@@ -15,26 +15,26 @@ from repolab_reference.agent_boundary import (
     parse_patch_artifact,
     validate_patch_artifact,
 )
-from repolab_reference.controlled import (
+from benchseal.controlled import (
     build_controlled_repository,
     write_trusted_verifier,
 )
-from repolab_reference.controlled_agent import (
+from benchseal.controlled_agent import (
     UNIMPLEMENTED_M2A_CONTROLS,
     UNMEASURED_M2A_CHECKS,
     replay_controlled_agent_suite,
 )
-from repolab_reference.replay import SnapshotSecurityError
+from benchseal.replay import SnapshotSecurityError
 
 EXPECTED_M2A_SUITE_SHA256 = (
-    "sha256:a09c60260bb7e671bf511a901092452d83b1d68a46b869c161d78b98944cac87"
+    "sha256:6a572de985a009a83257cd91c6f02ae363b3f35e36c2ffe9e2c5224c120367b5"
 )
 
 
 class ControlledAgentReplayTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        cls.temporary = tempfile.TemporaryDirectory(prefix="repolab-agent-")
+        cls.temporary = tempfile.TemporaryDirectory(prefix="benchseal-agent-")
         cls.root = Path(cls.temporary.name)
         cls.controlled = build_controlled_repository(cls.root / "repository")
         cls.verifier = write_trusted_verifier(cls.root / "source" / "verifier.py")
@@ -98,7 +98,7 @@ class ControlledAgentReplayTests(unittest.TestCase):
 
 class PatchArtifactSafetyTests(unittest.TestCase):
     def setUp(self) -> None:
-        self.temporary = tempfile.TemporaryDirectory(prefix="repolab-patch-")
+        self.temporary = tempfile.TemporaryDirectory(prefix="benchseal-patch-")
         self.root = Path(self.temporary.name)
         self.workspace = self.root / "workspace"
         self.workspace.mkdir()

@@ -1,5 +1,7 @@
 # Analysis of the RepoLab red-team memo
 
+> **2026-08-16 update:** The broad RepoLab product remains a no-go. The narrow task-evidence validator has been named BenchSeal and shipped as a local MVP. See [ADR 0002](adr/0002-benchseal-mvp.md). This does not authorize the original mining, agent-comparison, or automatic-optimization product.
+
 ## Decision
 
 The memo's strategic conclusion is sound: **do not build or market RepoLab as a new end-to-end product category**. Use this private repository only to test small, reusable primitives and to discover a genuinely unserved seam.

@@ -9,7 +9,7 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
-from repolab_reference import (  # noqa: E402
+from benchseal import (  # noqa: E402
     ReplayTask,
     SnapshotSecurityError,
     build_controlled_repository,
@@ -17,18 +17,18 @@ from repolab_reference import (  # noqa: E402
     tree_sha256,
     write_trusted_verifier,
 )
-from repolab_reference.replay import UNMEASURED_M1_CHECKS  # noqa: E402
+from benchseal.replay import UNMEASURED_M1_CHECKS  # noqa: E402
 
 
 EXPECTED_SUITE_SHA256 = (
-    "sha256:b5b4095dc4c632fff2ea39322940056b61e3adab8f6c088d19e34c695a9b3401"
+    "sha256:bdcbcc708f6f72bf24cd9e3d4958760c85aa7ca09f2b8e17d6a1b5d90c919537"
 )
 
 
 class ControlledReplayTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        cls.temporary = tempfile.TemporaryDirectory(prefix="repolab-replay-")
+        cls.temporary = tempfile.TemporaryDirectory(prefix="benchseal-replay-")
         cls.root = Path(cls.temporary.name)
         cls.controlled = build_controlled_repository(cls.root / "repository")
         cls.verifier = write_trusted_verifier(
@@ -127,7 +127,7 @@ class SnapshotSafetyTests(unittest.TestCase):
             )
 
     def test_tree_digest_rejects_symlinks(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="repolab-symlink-") as directory:
+        with tempfile.TemporaryDirectory(prefix="benchseal-symlink-") as directory:
             root = Path(directory)
             outside = root / "outside.txt"
             outside.write_text("oracle", encoding="utf-8")

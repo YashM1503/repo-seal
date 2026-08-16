@@ -6,7 +6,7 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
-from repolab_reference import (  # noqa: E402
+from benchseal import (  # noqa: E402
     DecisionReceipt,
     EnvironmentPolicy,
     TaskManifest,

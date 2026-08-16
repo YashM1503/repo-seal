@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
-from repolab_reference.docker_backend import (
+from benchseal.docker_backend import (
     DEFAULT_DOCKER_PROBE_IMAGE,
     DockerBackendError,
     DockerBackendUnavailable,
@@ -24,7 +24,7 @@ from repolab_reference.docker_backend import (
     docker_isolation_plan,
     run_docker_isolation_preflight,
 )
-from repolab_reference.isolation import (
+from benchseal.isolation import (
     ControlStatus,
     IsolationControl,
 )
@@ -33,7 +33,7 @@ EXPECTED_POLICY_SHA256 = (
     "sha256:fc77873cea7f9c4afa53a41a93fdb1554f8ffa2deb6c39deac79ad2a641d52fc"
 )
 EXPECTED_COMMAND_TEMPLATE_SHA256 = (
-    "sha256:a9902c7c08d4423e5af4726c88d59e19045ced82454f544795d33fbe25f07201"
+    "sha256:5995e3d9868a94a09b27946f85f0c0dbf92c5520f76d1a8398de94b03bf29726"
 )
 
 
@@ -78,7 +78,7 @@ class DockerPolicyTests(unittest.TestCase):
             DockerIsolationPolicy(required_engine_major=30)
 
     def test_command_has_exact_mounts_and_required_security_flags(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="repolab-docker-plan-") as directory:
+        with tempfile.TemporaryDirectory(prefix="benchseal-docker-plan-") as directory:
             root = Path(directory)
             probe = root / "probe.py"
             workspace = root / "workspace"
@@ -91,7 +91,7 @@ class DockerPolicyTests(unittest.TestCase):
                 probe_source=probe,
                 workspace=workspace,
                 export_directory=export,
-                container_name="repolab-probe-" + "a" * 32,
+                container_name="benchseal-probe-" + "a" * 32,
             )
 
         required = {
@@ -123,7 +123,7 @@ class DockerPolicyTests(unittest.TestCase):
             len([mount for mount in mounts if "bind-recursive=disabled" in mount]),
             2,
         )
-        self.assertIn("dst=/repolab-isolation-probe.py,readonly", mounts[0])
+        self.assertIn("dst=/benchseal-isolation-probe.py,readonly", mounts[0])
         rendered = "\n".join(command)
         for forbidden in (
             "--privileged",
@@ -136,7 +136,7 @@ class DockerPolicyTests(unittest.TestCase):
 
     def test_command_rejects_relative_paths_commas_and_arbitrary_names(self) -> None:
         policy = DockerIsolationPolicy()
-        root = Path("/tmp/repolab-docker-policy")
+        root = Path("/tmp/benchseal-docker-policy")
 
         with self.assertRaisesRegex(ValueError, "absolute"):
             build_docker_command(
@@ -144,7 +144,7 @@ class DockerPolicyTests(unittest.TestCase):
                 probe_source=Path("relative"),
                 workspace=root / "workspace",
                 export_directory=root / "export",
-                container_name="repolab-probe-" + "a" * 32,
+                container_name="benchseal-probe-" + "a" * 32,
             )
         with self.assertRaisesRegex(ValueError, "unsafe for Docker mounts"):
             build_docker_command(
@@ -152,7 +152,7 @@ class DockerPolicyTests(unittest.TestCase):
                 probe_source=Path("/tmp/with,comma"),
                 workspace=root / "workspace",
                 export_directory=root / "export",
-                container_name="repolab-probe-" + "a" * 32,
+                container_name="benchseal-probe-" + "a" * 32,
             )
         with self.assertRaisesRegex(ValueError, "controlled format"):
             build_docker_command(
@@ -169,7 +169,7 @@ class DockerPolicyTests(unittest.TestCase):
                 probe_source=root / "probe",
                 workspace=root / "workspace",
                 export_directory=root / "export",
-                container_name="repolab-probe-" + "a" * 32,
+                container_name="benchseal-probe-" + "a" * 32,
                 docker_host="tcp://remote.example:2376",
             )
         with self.assertRaisesRegex(ValueError, "absolute safe path"):
@@ -178,7 +178,7 @@ class DockerPolicyTests(unittest.TestCase):
                 probe_source=root / "probe",
                 workspace=root / "workspace",
                 export_directory=root / "export",
-                container_name="repolab-probe-" + "a" * 32,
+                container_name="benchseal-probe-" + "a" * 32,
                 docker_executable="relative/docker",
             )
 
@@ -200,12 +200,12 @@ class DockerPolicyTests(unittest.TestCase):
             {
                 "DOCKER_CONTEXT": "remote",
                 "DOCKER_HOST": "tcp://remote.example:2376",
-                "REPOLAB_CONTROL": "kept",
+                "BENCHSEAL_CONTROL": "kept",
             },
             clear=True,
         ):
             environment = _docker_cli_environment()
-        self.assertEqual(environment, {"REPOLAB_CONTROL": "kept"})
+        self.assertEqual(environment, {"BENCHSEAL_CONTROL": "kept"})
 
     def test_image_declared_volumes_are_rejected(self) -> None:
         policy = DockerIsolationPolicy()
@@ -228,7 +228,7 @@ class DockerPolicyTests(unittest.TestCase):
 
         with (
             patch(
-                "repolab_reference.docker_backend._run_metadata_command",
+                "benchseal.docker_backend._run_metadata_command",
                 return_value=result,
             ),
             self.assertRaisesRegex(DockerBackendError, "uncontrolled volumes"),
@@ -241,23 +241,23 @@ class DockerPolicyTests(unittest.TestCase):
             )
 
     def test_below_floor_engine_is_rejected_before_work_root_creation(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="repolab-engine-floor-") as directory:
+        with tempfile.TemporaryDirectory(prefix="benchseal-engine-floor-") as directory:
             work_root = Path(directory) / "must-not-exist"
             with (
                 patch(
-                    "repolab_reference.docker_backend._resolve_docker_cli",
+                    "benchseal.docker_backend._resolve_docker_cli",
                     return_value=Path(__file__),
                 ),
                 patch(
-                    "repolab_reference.docker_backend._inspect_local_docker_endpoint",
+                    "benchseal.docker_backend._inspect_local_docker_endpoint",
                     return_value="unix:///var/run/docker.sock",
                 ),
                 patch(
-                    "repolab_reference.docker_backend._inspect_image",
+                    "benchseal.docker_backend._inspect_image",
                     return_value={},
                 ),
                 patch(
-                    "repolab_reference.docker_backend._inspect_engine",
+                    "benchseal.docker_backend._inspect_engine",
                     return_value={"version": "29.2.1"},
                 ),
                 self.assertRaisesRegex(
@@ -300,12 +300,12 @@ class DockerPolicyTests(unittest.TestCase):
 
 
 @unittest.skipUnless(
-    os.environ.get("REPOLAB_RUN_DOCKER_INTEGRATION") == "1",
-    "set REPOLAB_RUN_DOCKER_INTEGRATION=1 with the pinned image available",
+    os.environ.get("BENCHSEAL_RUN_DOCKER_INTEGRATION") == "1",
+    "set BENCHSEAL_RUN_DOCKER_INTEGRATION=1 with the pinned image available",
 )
 class DockerLiveIntegrationTests(unittest.TestCase):
     def test_pinned_backend_passes_every_control_except_review(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="repolab-docker-live-") as directory:
+        with tempfile.TemporaryDirectory(prefix="benchseal-docker-live-") as directory:
             root = Path(directory)
             receipt = run_docker_isolation_preflight(
                 root / "run",

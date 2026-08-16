@@ -9,7 +9,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
-from repolab_reference.review_bundle import (
+from benchseal.review_bundle import (
     REVIEW_SCOPE_PATHS,
     create_security_review_bundle,
 )
@@ -29,10 +29,10 @@ class SecurityReviewBundleTests(unittest.TestCase):
             {
                 "GIT_AUTHOR_DATE": "2000-01-01T00:00:00+0000",
                 "GIT_AUTHOR_EMAIL": "fixture@example.invalid",
-                "GIT_AUTHOR_NAME": "RepoLab Fixture",
+                "GIT_AUTHOR_NAME": "BenchSeal Fixture",
                 "GIT_COMMITTER_DATE": "2000-01-01T00:00:00+0000",
                 "GIT_COMMITTER_EMAIL": "fixture@example.invalid",
-                "GIT_COMMITTER_NAME": "RepoLab Fixture",
+                "GIT_COMMITTER_NAME": "BenchSeal Fixture",
             }
         )
         subprocess.run(
@@ -66,7 +66,7 @@ class SecurityReviewBundleTests(unittest.TestCase):
         return repository, completed.stdout.strip()
 
     def test_two_handoffs_are_deterministic_and_keep_the_gate_closed(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="repolab-review-") as directory:
+        with tempfile.TemporaryDirectory(prefix="benchseal-review-") as directory:
             root = Path(directory)
             repository, commit_oid = self._committed_repository(root)
             first = create_security_review_bundle(repository, root / "first")
@@ -87,7 +87,7 @@ class SecurityReviewBundleTests(unittest.TestCase):
         self.assertNotIn(str(root), first.to_json())
 
     def test_receipt_changes_for_a_new_commit_with_the_same_scope(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="repolab-review-") as directory:
+        with tempfile.TemporaryDirectory(prefix="benchseal-review-") as directory:
             root = Path(directory)
             repository, first_commit = self._committed_repository(root)
             first = create_security_review_bundle(repository, root / "first")
@@ -96,10 +96,10 @@ class SecurityReviewBundleTests(unittest.TestCase):
                 {
                     "GIT_AUTHOR_DATE": "2000-01-01T00:00:01+0000",
                     "GIT_AUTHOR_EMAIL": "fixture@example.invalid",
-                    "GIT_AUTHOR_NAME": "RepoLab Fixture",
+                    "GIT_AUTHOR_NAME": "BenchSeal Fixture",
                     "GIT_COMMITTER_DATE": "2000-01-01T00:00:01+0000",
                     "GIT_COMMITTER_EMAIL": "fixture@example.invalid",
-                    "GIT_COMMITTER_NAME": "RepoLab Fixture",
+                    "GIT_COMMITTER_NAME": "BenchSeal Fixture",
                 }
             )
             subprocess.run(
@@ -128,7 +128,7 @@ class SecurityReviewBundleTests(unittest.TestCase):
     def test_dirty_repository_is_rejected_without_writing_output(self) -> None:
         for scenario in ("tracked", "untracked"):
             with self.subTest(scenario=scenario), tempfile.TemporaryDirectory(
-                prefix="repolab-review-"
+                prefix="benchseal-review-"
             ) as directory:
                 root = Path(directory)
                 repository, _ = self._committed_repository(root)
@@ -149,7 +149,7 @@ class SecurityReviewBundleTests(unittest.TestCase):
                 self.assertFalse(output.exists())
 
     def test_repository_root_must_be_the_worktree_root(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="repolab-review-") as directory:
+        with tempfile.TemporaryDirectory(prefix="benchseal-review-") as directory:
             root = Path(directory)
             repository, _ = self._committed_repository(root)
             with self.assertRaisesRegex(ValueError, "worktree root"):
@@ -157,7 +157,7 @@ class SecurityReviewBundleTests(unittest.TestCase):
 
     def test_existing_or_in_repository_output_is_rejected(self) -> None:
         repository = Path(__file__).parents[1]
-        with tempfile.TemporaryDirectory(prefix="repolab-review-") as directory:
+        with tempfile.TemporaryDirectory(prefix="benchseal-review-") as directory:
             existing = Path(directory)
             with self.assertRaisesRegex(ValueError, "must not already exist"):
                 create_security_review_bundle(repository, existing)

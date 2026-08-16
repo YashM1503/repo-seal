@@ -68,7 +68,7 @@ Unknown fields, missing observations, ambiguous boolean strings, invalid numeric
 ## Run the gate
 
 ```bash
-PYTHONPATH=src python -m repolab_reference check-fixtures tests/fixtures/falsification
+PYTHONPATH=src python -m benchseal check-fixtures tests/fixtures/falsification
 ```
 
 Success requires all fixture expectations to match the actual findings. The command emits a JSON receipt and exits non-zero on a mismatch or malformed fixture.

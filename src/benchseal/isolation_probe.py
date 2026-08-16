@@ -108,7 +108,7 @@ def _attempt_verifier_mutation(path):
 def _attempt_network(host, port):
     try:
         with socket.create_connection((host, port), timeout=2) as connection:
-            connection.sendall(b"repolab-isolation-probe")
+            connection.sendall(b"benchseal-isolation-probe")
     except OSError:
         return False
     return True
@@ -141,13 +141,13 @@ def main():
         ),
         "network_interfaces": _network_interfaces(),
         "root_write_succeeded": _attempt_write(
-            "/repolab-root-write-sentinel", "root changed\n"
+            "/benchseal-root-write-sentinel", "root changed\n"
         ),
         "workspace_write_succeeded": _attempt_write(
-            "/workspace/repolab-workspace-write-sentinel", "workspace changed\n"
+            "/workspace/benchseal-workspace-write-sentinel", "workspace changed\n"
         ),
         "root_mount_read_only": _mount_has_option("/", "ro"),
-        "probe_mount_read_only": _mount_has_option("/repolab-isolation-probe.py", "ro"),
+        "probe_mount_read_only": _mount_has_option("/benchseal-isolation-probe.py", "ro"),
         "workspace_mount_read_only": _mount_has_option("/workspace", "ro"),
         "export_mount_read_only": _mount_has_option("/export", "ro"),
         "tmp_noexec": _mount_has_option("/tmp", "noexec"),

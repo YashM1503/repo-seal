@@ -33,6 +33,11 @@ jobs:
       - name: Run contract and replay tests
         run: python -m unittest discover -s tests -v
 
+      - name: Run BenchSeal MVP
+        run: |
+          python -m benchseal --version
+          python -m benchseal validate examples/evidence.json --json
+
       - name: Check M0 fixtures
         run: python -m repolab_reference check-fixtures tests/fixtures/falsification
 

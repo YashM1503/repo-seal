@@ -3,18 +3,27 @@ requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "repolab-reference"
-version = "0.7.0"
-description = "Reference schemas and quality gates for repository-derived coding-agent evaluations"
+name = "benchseal"
+version = "0.8.0"
+description = "Fail-closed checks for coding-agent benchmark-task evidence"
 requires-python = ">=3.9"
 license = "LicenseRef-Proprietary"
-authors = [{ name = "RepoLab contributors" }]
+authors = [{ name = "BenchSeal contributors" }]
 classifiers = [
   "Development Status :: 2 - Pre-Alpha",
   "Private :: Do Not Upload",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.9",
 ]
+
+[project.scripts]
+benchseal = "benchseal.__main__:main"
+
+[tool.ruff]
+target-version = "py39"
+
+[tool.ruff.lint]
+ignore = ["UP045"] # PEP 604 union syntax requires Python 3.10.
 
 [tool.setuptools.packages.find]
 where = ["src"]

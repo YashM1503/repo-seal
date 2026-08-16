@@ -1,4 +1,4 @@
-"""Command-line entrypoint for the safe reference harness."""
+"""Command-line entrypoint for BenchSeal."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
-from typing import List, Optional
+from typing import Optional
 
 from .agent_boundary import AgentBoundaryError
 from .controlled import build_controlled_repository, write_trusted_verifier
@@ -17,15 +17,38 @@ from .docker_backend import (
     docker_isolation_plan,
     run_docker_isolation_preflight,
 )
+from .evidence import validate_evidence_file
 from .falsification import check_fixture, iter_fixture_paths
 from .isolation import IsolationProbeError, run_host_process_negative_control
 from .replay import ReplayError, replay_suite
 from .review_bundle import create_security_review_bundle
+from .version import __version__
 
 
-def main(argv: Optional[List[str]] = None) -> int:
-    parser = argparse.ArgumentParser(prog="python -m repolab_reference")
+def main(argv: Optional[list[str]] = None) -> int:
+    parser = argparse.ArgumentParser(
+        prog="benchseal",
+        description="Fail-closed checks for coding-agent benchmark evidence.",
+    )
+    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     subparsers = parser.add_subparsers(dest="command", required=True)
+
+    validate_parser = subparsers.add_parser(
+        "validate",
+        help="validate one task-evidence JSON file and explain the decision",
+    )
+    validate_parser.add_argument("evidence_file", type=Path)
+    validate_parser.add_argument(
+        "--json",
+        action="store_true",
+        dest="json_output",
+        help="print the deterministic JSON receipt instead of the human report",
+    )
+    validate_parser.add_argument(
+        "--output",
+        type=Path,
+        help="also save the JSON receipt to a new file",
+    )
 
     check_parser = subparsers.add_parser(
         "check-fixtures",
@@ -71,6 +94,12 @@ def main(argv: Optional[List[str]] = None) -> int:
     review_parser.add_argument("output_directory", type=Path)
     arguments = parser.parse_args(argv)
 
+    if arguments.command == "validate":
+        return _validate_evidence(
+            arguments.evidence_file,
+            json_output=arguments.json_output,
+            output=arguments.output,
+        )
     if arguments.command == "check-fixtures":
         return _check_fixtures(arguments.directory)
     if arguments.command == "controlled-replay":
@@ -90,6 +119,29 @@ def main(argv: Optional[List[str]] = None) -> int:
         )
     parser.error(f"unsupported command: {arguments.command}")
     return 2
+
+
+def _validate_evidence(
+    evidence_file: Path,
+    *,
+    json_output: bool,
+    output: Optional[Path],
+) -> int:
+    if output is not None and (output.exists() or output.is_symlink()):
+        print("output file must not already exist", file=sys.stderr)
+        return 2
+    try:
+        report = validate_evidence_file(evidence_file)
+        receipt = report.to_json()
+        if output is not None:
+            output.parent.mkdir(parents=True, exist_ok=True)
+            output.write_text(receipt + "\n", encoding="utf-8")
+        print(receipt if json_output else report.to_text())
+        return 0 if report.eligible else 1
+    except (OSError, TypeError, ValueError) as error:
+        detail = json.dumps(str(error), ensure_ascii=True)[1:-1]
+        print(f"BenchSeal could not validate evidence: {detail}", file=sys.stderr)
+        return 2
 
 
 def _check_fixtures(directory: Path) -> int:

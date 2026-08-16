@@ -45,7 +45,7 @@ Commit authors, timestamps, messages, line endings, and source ordering are fixe
 ## Run locally
 
 ```bash
-PYTHONPATH=src python -m repolab_reference controlled-replay /tmp/repolab-controlled-replay
+PYTHONPATH=src python -m benchseal controlled-replay /tmp/benchseal-controlled-replay
 ```
 
 The destination must not already exist. The command creates:

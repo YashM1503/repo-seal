@@ -8,13 +8,13 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
-from repolab_reference import (  # noqa: E402
+from benchseal import (  # noqa: E402
     FalsificationEvidence,
     ValidationCode,
     check_fixture,
 )
-from repolab_reference.__main__ import main  # noqa: E402
-from repolab_reference.falsification import iter_fixture_paths  # noqa: E402
+from benchseal.__main__ import main  # noqa: E402
+from benchseal.falsification import iter_fixture_paths  # noqa: E402
 
 
 FIXTURE_DIRECTORY = Path(__file__).parent / "fixtures" / "falsification"
