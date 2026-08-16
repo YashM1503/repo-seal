@@ -61,7 +61,7 @@ jobs:
       PYTHONDONTWRITEBYTECODE: "1"
 
   docker-isolation:
-    name: Hardened Docker isolation
+    name: Docker isolation research
     needs: test
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -84,12 +84,10 @@ jobs:
       - name: Pull pinned M2b probe image
         run: docker pull "docker.io/library/python@sha256:399babc8b49529dabfd9c922f2b5eea81d611e4512e3ed250d75bd2e7683f4b0"
 
-      - name: Run hardened M2b Docker isolation preflight
+      - name: Run live probe when the Engine satisfies policy
         env:
           BENCHSEAL_RUN_DOCKER_INTEGRATION: "1"
-        run: |
-          python -W error::ResourceWarning -m unittest tests.test_docker_backend.DockerLiveIntegrationTests -v
-          python -m benchseal docker-isolation-preflight "$RUNNER_TEMP/benchseal-docker-isolation"
+        run: python -W error::ResourceWarning -m unittest tests.test_docker_backend.DockerLiveIntegrationTests -v
 
     env:
       PYTHONDONTWRITEBYTECODE: "1"

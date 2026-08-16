@@ -93,6 +93,8 @@ PYTHONPATH=src python -m benchseal \
 
 The repository must be at its Git worktree root with no tracked or untracked changes. Bundle version 0.2 resolves the commit twice around file hashing, rejects a moving or dirty source tree before writing output, and records `git_commit_oid`, `git_object_format`, and `git_worktree_clean: true`. The generated manifest otherwise contains only relative paths, file hashes, policy and command-template digests, and closed-gate review status. Its checklist cannot itself approve the boundary.
 
+The CI research job runs the live probe only when the hosted runner's Docker Engine satisfies the pinned policy range. An older or future-major Engine is reported as an explicit skipped test: that means live evidence is unavailable, not that the backend passed. Independent review still requires evidence from a policy-supported host.
+
 ### Independent-review handoff
 
 Prepare and review evidence in this order:

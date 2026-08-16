@@ -17,6 +17,7 @@ BenchSeal 1.0 closes the narrow task-evidence validation MVP.
 
 - CI now invokes the installed `benchseal` package instead of the removed `repolab_reference` module.
 - The Docker integration job now sets the opt-in variable the test actually checks.
+- An out-of-range CI Docker Engine is reported as unavailable evidence instead of weakening the pinned security policy or failing the validator MVP gate.
 - The host negative control explicitly allows the macOS-managed child-process text-encoding key while continuing to reject arbitrary inherited environment keys.
 - Receipt output uses exclusive creation and cannot replace an existing file or symbolic link.
 

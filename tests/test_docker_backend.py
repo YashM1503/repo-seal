@@ -307,10 +307,15 @@ class DockerLiveIntegrationTests(unittest.TestCase):
     def test_pinned_backend_passes_every_control_except_review(self) -> None:
         with tempfile.TemporaryDirectory(prefix="benchseal-docker-live-") as directory:
             root = Path(directory)
-            receipt = run_docker_isolation_preflight(
-                root / "run",
-                policy=DockerIsolationPolicy(),
-            )
+            try:
+                receipt = run_docker_isolation_preflight(
+                    root / "run",
+                    policy=DockerIsolationPolicy(),
+                )
+            except DockerBackendUnavailable as error:
+                if "Docker Engine security range not met" not in str(error):
+                    raise
+                self.skipTest(f"policy-supported Docker Engine unavailable: {error}")
             rendered = receipt.to_json()
 
         self.assertTrue(receipt.backend_gate_passed)
