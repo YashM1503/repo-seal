@@ -143,3 +143,7 @@ Start with [CONTRIBUTING.md](CONTRIBUTING.md). Changes that add a validation rul
 ## Security
 
 Read [SECURITY.md](SECURITY.md) before changing any runner, verifier, Docker policy, export rule, or receipt. Do not connect a real coding agent or execute untrusted repository code with the current research runners.
+
+## License
+
+BenchSeal is licensed under the [Apache License 2.0](LICENSE). The license includes an explicit patent grant from contributors. See [ADR 0005](docs/adr/0005-public-apache-release.md) for the public-release decision and its scope.

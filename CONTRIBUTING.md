@@ -2,6 +2,8 @@
 
 Thanks for helping improve BenchSeal. This guide explains what belongs in the project, how to make a change, and which safety rules must remain intact.
 
+Unless you explicitly state otherwise, contributions submitted for inclusion in BenchSeal are licensed under the [Apache License 2.0](LICENSE), as described by section 5 of that license.
+
 ## Start with the project boundary
 
 BenchSeal's MVP has one primary job: read recorded evidence about a coding-agent benchmark task, apply deterministic checks, and return an `ELIGIBLE` or `HOLD` decision with a reproducible receipt.

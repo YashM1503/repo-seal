@@ -2,6 +2,12 @@
 
 This file records user-visible BenchSeal changes. Dates use `YYYY-MM-DD`.
 
+## 1.0.1 — 2026-08-16
+
+- Released the narrow BenchSeal validator as public open-source software under the Apache License 2.0.
+- Added SPDX packaging metadata, public repository links, and explicit contribution licensing.
+- Preserved the no-go decision for the broader RepoLab product and all closed real-agent security gates.
+
 ## 1.0.0 — 2026-08-16
 
 BenchSeal 1.0 closes the narrow task-evidence validation MVP.

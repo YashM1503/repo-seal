@@ -29,7 +29,7 @@ class TaskEvidenceReportTests(unittest.TestCase):
         self.assertEqual(first.decision, "ELIGIBLE")
         self.assertEqual(first.checks_evaluated, 12)
         self.assertEqual(first.findings, ())
-        self.assertEqual(first.to_dict()["tool_version"], "1.0.0")
+        self.assertEqual(first.to_dict()["tool_version"], "1.0.1")
         self.assertEqual(first.to_dict()["report_kind"], "task")
         self.assertEqual(first.to_dict()["report_schema_version"], "0.2")
         self.assertIn("No blocking findings", first.to_text())
