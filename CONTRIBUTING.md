@@ -40,7 +40,9 @@ On Windows PowerShell, activate the environment with:
 Run the MVP against the included example:
 
 ```bash
+benchseal new-evidence /tmp/my-evidence.json --task-id my-task
 benchseal validate examples/evidence.json
+benchseal validate examples/evidence-set
 benchseal validate examples/evidence.json --json
 ```
 
@@ -55,6 +57,8 @@ git switch -c your-name/short-description
 Code in `src/benchseal/` should remain compatible with Python 3.9. Prefer immutable data structures, explicit limits, deterministic ordering, and standard-library solutions. Validation must fail closed: missing, malformed, unavailable, or ambiguous evidence must never be treated as a pass.
 
 User-facing errors should explain what is wrong and what the user can do next. Receipts must not contain temporary absolute paths, secrets, hidden-test contents, or unstable timestamps.
+
+Evidence drafts must remain fail closed. Use `null` for observations that have not been collected; never generate a passing value merely to make a template convenient. Directory reports must remain independent of filenames and filesystem enumeration order.
 
 ## Add or change a validation rule
 

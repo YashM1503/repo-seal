@@ -17,7 +17,7 @@ from .docker_backend import (
     docker_isolation_plan,
     run_docker_isolation_preflight,
 )
-from .evidence import validate_evidence_file
+from .evidence import validate_evidence_path, write_evidence_draft
 from .falsification import check_fixture, iter_fixture_paths
 from .isolation import IsolationProbeError, run_host_process_negative_control
 from .replay import ReplayError, replay_suite
@@ -33,11 +33,18 @@ def main(argv: Optional[list[str]] = None) -> int:
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
+    draft_parser = subparsers.add_parser(
+        "new-evidence",
+        help="create a fail-closed evidence draft with every observation unset",
+    )
+    draft_parser.add_argument("output_file", type=Path)
+    draft_parser.add_argument("--task-id", required=True)
+
     validate_parser = subparsers.add_parser(
         "validate",
-        help="validate one task-evidence JSON file and explain the decision",
+        help="validate an evidence JSON file or directory and explain the decision",
     )
-    validate_parser.add_argument("evidence_file", type=Path)
+    validate_parser.add_argument("evidence_path", type=Path)
     validate_parser.add_argument(
         "--json",
         action="store_true",
@@ -94,9 +101,11 @@ def main(argv: Optional[list[str]] = None) -> int:
     review_parser.add_argument("output_directory", type=Path)
     arguments = parser.parse_args(argv)
 
+    if arguments.command == "new-evidence":
+        return _new_evidence(arguments.output_file, arguments.task_id)
     if arguments.command == "validate":
         return _validate_evidence(
-            arguments.evidence_file,
+            arguments.evidence_path,
             json_output=arguments.json_output,
             output=arguments.output,
         )
@@ -121,8 +130,23 @@ def main(argv: Optional[list[str]] = None) -> int:
     return 2
 
 
+def _new_evidence(output_file: Path, task_id: str) -> int:
+    try:
+        write_evidence_draft(output_file, task_id)
+        print(f"Created evidence draft: {_terminal_text(str(output_file))}")
+        print("Replace every null with a measured observation, then run:")
+        print(f"  benchseal validate {_terminal_text(str(output_file))}")
+        return 0
+    except (OSError, ValueError) as error:
+        print(
+            f"BenchSeal could not create evidence: {_terminal_text(str(error))}",
+            file=sys.stderr,
+        )
+        return 2
+
+
 def _validate_evidence(
-    evidence_file: Path,
+    evidence_path: Path,
     *,
     json_output: bool,
     output: Optional[Path],
@@ -131,7 +155,7 @@ def _validate_evidence(
         print("output file must not already exist", file=sys.stderr)
         return 2
     try:
-        report = validate_evidence_file(evidence_file)
+        report = validate_evidence_path(evidence_path)
         receipt = report.to_json()
         if output is not None:
             output.parent.mkdir(parents=True, exist_ok=True)
@@ -139,9 +163,15 @@ def _validate_evidence(
         print(receipt if json_output else report.to_text())
         return 0 if report.eligible else 1
     except (OSError, TypeError, ValueError) as error:
-        detail = json.dumps(str(error), ensure_ascii=True)[1:-1]
-        print(f"BenchSeal could not validate evidence: {detail}", file=sys.stderr)
+        print(
+            f"BenchSeal could not validate evidence: {_terminal_text(str(error))}",
+            file=sys.stderr,
+        )
         return 2
+
+
+def _terminal_text(value: str) -> str:
+    return json.dumps(value, ensure_ascii=True)[1:-1]
 
 
 def _check_fixtures(directory: Path) -> int:

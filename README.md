@@ -31,6 +31,22 @@ Checks evaluated: 12
 No blocking findings were recorded.
 ```
 
+Create a draft for your own task:
+
+```bash
+benchseal new-evidence ./payment-fix.json --task-id payment-fix-123
+```
+
+Every observation in a new draft is `null`. The draft cannot pass validation until you replace each `null` with evidence collected by a trusted process. BenchSeal never fills unknown values with optimistic defaults.
+
+Validate a directory when you have more than one task:
+
+```bash
+benchseal validate examples/evidence-set
+```
+
+Directory validation reads the `.json` files directly inside that directory, rejects duplicate task IDs, and produces one aggregate decision. If any task is on hold, the task set is on hold. The JSON receipt identifies itself with `report_kind: "task_set"` and includes a filename-independent `task_set_sha256`.
+
 For CI or another tool, request JSON and save the receipt:
 
 ```bash
@@ -71,7 +87,7 @@ The complete input is shown in [examples/evidence.json](examples/evidence.json).
 | `broken_patch_trials` | How many known-broken solutions were tried? |
 | `cache_leaks` | Did shared state expose an answer or oracle material? |
 
-Input parsing is strict. Missing fields, unknown fields, duplicate JSON keys, incorrect types, symlinks, and files larger than 1 MiB are rejected instead of guessed at.
+Input parsing is strict. Missing fields, unknown fields, duplicate JSON keys, incorrect types, symlinks, and files larger than 1 MiB are rejected instead of guessed at. A directory may contain at most 1,000 JSON evidence files and is processed non-recursively.
 
 ## What an `ELIGIBLE` decision does not prove
 
@@ -87,9 +103,9 @@ Keep the evidence receipt beside the collection logs and environment metadata th
 
 ## Project status
 
-Version 0.8 is an MVP for the validation-and-receipt workflow. The older controlled replay, mock-agent boundary, and Docker isolation experiments remain in the repository as research tools, but they are not the primary product surface and are not approved for arbitrary repositories or real agents.
+Version 0.9 is an MVP for the evidence-draft, single-task, task-set, and receipt workflow. The older controlled replay, mock-agent boundary, and Docker isolation experiments remain in the repository as research tools, but they are not the primary product surface and are not approved for arbitrary repositories or real agents.
 
-The original project was called RepoLab Reference. It was renamed because the broader “mine history and optimize coding agents” product overlaps existing systems. BenchSeal keeps the useful, narrow component: fail-closed task-evidence validation. The reasoning is preserved in the [red-team analysis](docs/analysis.md), [original scope decision](docs/adr/0001-private-reference-scope.md), and [BenchSeal MVP decision](docs/adr/0002-benchseal-mvp.md).
+The original project was called RepoLab Reference. It was renamed because the broader “mine history and optimize coding agents” product overlaps existing systems. BenchSeal keeps the useful, narrow component: fail-closed task-evidence validation. The reasoning is preserved in the [red-team analysis](docs/analysis.md), [original scope decision](docs/adr/0001-private-reference-scope.md), [BenchSeal MVP decision](docs/adr/0002-benchseal-mvp.md), and [evidence workflow decision](docs/adr/0003-evidence-workflow.md).
 
 ## Advanced research commands
 

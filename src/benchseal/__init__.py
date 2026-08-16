@@ -38,7 +38,13 @@ from .docker_backend import (
     docker_isolation_plan,
     run_docker_isolation_preflight,
 )
-from .evidence import TaskEvidenceReport, validate_evidence_file
+from .evidence import (
+    TaskEvidenceReport,
+    TaskSetEvidenceReport,
+    validate_evidence_file,
+    validate_evidence_path,
+    write_evidence_draft,
+)
 from .falsification import (
     FalsificationEvidence,
     FalsificationFixture,
@@ -135,6 +141,7 @@ __all__ = [
     "TaskEvidenceReport",
     "TaskManifest",
     "TaskQualityRecord",
+    "TaskSetEvidenceReport",
     "ValidationCode",
     "VerificationRun",
     "__version__",
@@ -161,6 +168,8 @@ __all__ = [
     "snapshot_commit",
     "tree_sha256",
     "validate_evidence_file",
+    "validate_evidence_path",
     "validate_patch_artifact",
+    "write_evidence_draft",
     "write_trusted_verifier",
 ]

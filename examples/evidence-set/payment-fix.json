@@ -1,0 +1,22 @@
+{
+  "schema_version": "0.1",
+  "task_id": "payment-fix-003",
+  "base_fails": true,
+  "gold_passes": true,
+  "flake_rate": 0.0,
+  "oracle_artifacts": [],
+  "future_history_accessible": false,
+  "verifier_writable": false,
+  "network_egress_observed": false,
+  "grader_tamper_vectors": [],
+  "declared_requirements": [
+    "reject a negative settlement amount"
+  ],
+  "verified_requirements": [
+    "reject a negative settlement amount"
+  ],
+  "rejected_valid_alternatives": 0,
+  "broken_patch_passes": 0,
+  "broken_patch_trials": 6,
+  "cache_leaks": []
+}
