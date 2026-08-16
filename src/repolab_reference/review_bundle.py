@@ -4,7 +4,11 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
+import re
+import shutil
 import stat
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -46,6 +50,7 @@ REVIEW_CHECKLIST = """# Independent M2b security review checklist
 
 This checklist is a handoff aid, not a review result.
 
+- Confirm `git_commit_oid` is the candidate commit and the reviewed checkout is clean at that commit.
 - Confirm every file digest in `manifest.json` against the reviewed checkout.
 - Reproduce the policy and normalized command-template digests.
 - Assess Docker daemon, local Unix socket, CLI binary, kernel, and image trust.
@@ -77,10 +82,12 @@ class ReviewedFile:
 @dataclass(frozen=True)
 class SecurityReviewBundleReceipt:
     files: tuple[ReviewedFile, ...]
+    git_commit_oid: str
+    git_object_format: str
     policy_sha256: str
     command_template_sha256: str
     checklist_sha256: str
-    bundle_version: str = "0.1"
+    bundle_version: str = "0.2"
 
     @property
     def scope_sha256(self) -> str:
@@ -106,6 +113,9 @@ class SecurityReviewBundleReceipt:
         return {
             "bundle_version": self.bundle_version,
             "review_scope": "m2b-docker-controlled-probe/0.2",
+            "git_commit_oid": self.git_commit_oid,
+            "git_object_format": self.git_object_format,
+            "git_worktree_clean": True,
             "files": [item.to_dict() for item in self.files],
             "scope_sha256": self.scope_sha256,
             "policy_sha256": self.policy_sha256,
@@ -131,8 +141,8 @@ def create_security_review_bundle(
 ) -> SecurityReviewBundleReceipt:
     root = repository_root.resolve()
     output = output_directory.resolve()
-    if not root.is_dir() or not (root / ".git").exists():
-        raise ValueError("repository_root must be a Git working tree")
+    if not root.is_dir():
+        raise ValueError("repository_root must be a directory")
     if output_directory.exists():
         raise ValueError("output_directory must not already exist")
     try:
@@ -142,14 +152,19 @@ def create_security_review_bundle(
     else:
         raise ValueError("output_directory must be outside repository_root")
 
+    git_commit_oid, git_object_format = _clean_git_source_state(root)
     reviewed_files = tuple(
         _reviewed_file(root, relative) for relative in REVIEW_SCOPE_PATHS
     )
+    if _clean_git_source_state(root) != (git_commit_oid, git_object_format):
+        raise ValueError("repository changed while generating the review bundle")
     policy = DockerIsolationPolicy()
     plan = docker_isolation_plan(policy)
     checklist_sha256 = _bytes_sha256(REVIEW_CHECKLIST.encode("utf-8"))
     receipt = SecurityReviewBundleReceipt(
         files=reviewed_files,
+        git_commit_oid=git_commit_oid,
+        git_object_format=git_object_format,
         policy_sha256=policy.policy_sha256,
         command_template_sha256=plan.command_template_sha256,
         checklist_sha256=checklist_sha256,
@@ -164,6 +179,88 @@ def create_security_review_bundle(
     manifest.chmod(0o600)
     checklist.chmod(0o600)
     return receipt
+
+
+def _clean_git_source_state(root: Path) -> tuple[str, str]:
+    candidate = shutil.which("git")
+    if candidate is None:
+        raise ValueError("git executable is unavailable")
+    try:
+        git = Path(candidate).resolve(strict=True)
+        metadata = git.stat()
+    except OSError as error:
+        raise ValueError("git executable is unavailable") from error
+    if not stat.S_ISREG(metadata.st_mode):
+        raise ValueError("git executable must be a regular file")
+    if metadata.st_mode & (stat.S_IWGRP | stat.S_IWOTH):
+        raise ValueError("git executable must not be group- or world-writable")
+
+    top_level = Path(
+        _run_git(git, root, "rev-parse", "--show-toplevel").strip()
+    ).resolve()
+    if top_level != root:
+        raise ValueError("repository_root must be the Git worktree root")
+
+    commit_oid = _run_git(
+        git, root, "rev-parse", "--verify", "HEAD^{commit}"
+    ).strip()
+    if re.fullmatch(r"[0-9a-f]{40}", commit_oid):
+        object_format = "sha1"
+    elif re.fullmatch(r"[0-9a-f]{64}", commit_oid):
+        object_format = "sha256"
+    else:
+        raise ValueError("Git returned an invalid commit object ID")
+
+    status_output = _run_git(
+        git,
+        root,
+        "status",
+        "--porcelain=v1",
+        "--untracked-files=all",
+    )
+    if status_output:
+        raise ValueError(
+            "repository worktree must be clean before generating a review bundle"
+        )
+    return commit_oid, object_format
+
+
+def _run_git(git: Path, root: Path, *arguments: str) -> str:
+    environment = {
+        key: value
+        for key, value in os.environ.items()
+        if not key.startswith("GIT_")
+    }
+    environment.update(
+        {
+            "GIT_CONFIG_GLOBAL": os.devnull,
+            "GIT_CONFIG_NOSYSTEM": "1",
+            "GIT_OPTIONAL_LOCKS": "0",
+            "GIT_TERMINAL_PROMPT": "0",
+            "LANG": "C",
+            "LC_ALL": "C",
+        }
+    )
+    completed = subprocess.run(
+        [
+            str(git),
+            "-c",
+            "core.autocrlf=false",
+            "-c",
+            "core.hooksPath=/dev/null",
+            *arguments,
+        ],
+        cwd=root,
+        env=environment,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+    if completed.returncode != 0:
+        detail = completed.stderr.strip()
+        raise ValueError(f"git {' '.join(arguments)} failed: {detail}")
+    return completed.stdout
 
 
 def _reviewed_file(root: Path, relative: str) -> ReviewedFile:

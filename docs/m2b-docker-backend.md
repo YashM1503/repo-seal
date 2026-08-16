@@ -91,13 +91,13 @@ PYTHONPATH=src python -m repolab_reference \
   security-review-bundle . /tmp/repolab-security-review
 ```
 
-The generated manifest contains only relative paths, file hashes, policy and command-template digests, and closed-gate review status. Its checklist cannot itself approve the boundary.
+The repository must be at its Git worktree root with no tracked or untracked changes. Bundle version 0.2 resolves the commit twice around file hashing, rejects a moving or dirty source tree before writing output, and records `git_commit_oid`, `git_object_format`, and `git_worktree_clean: true`. The generated manifest otherwise contains only relative paths, file hashes, policy and command-template digests, and closed-gate review status. Its checklist cannot itself approve the boundary.
 
 ### Independent-review handoff
 
 Prepare and review evidence in this order:
 
-1. Check out the exact candidate commit in a clean worktree and record `git rev-parse HEAD`.
+1. Check out the exact candidate commit in a clean worktree. Confirm the manifest's `git_commit_oid` equals `git rev-parse HEAD` and its `git_object_format` matches the repository.
 2. Confirm the selected daemon is local, the Engine reports 29.4.3 through 29.x, the image is native architecture, and the required AppArmor or SELinux boundary is active where policy requires it.
 3. Pull the canonical digest, run `docker-isolation-plan`, run `docker-isolation-preflight`, and retain both receipts plus the live probe's complete output directory. Do not weaken a failed control to obtain a passing receipt.
 4. Run the opt-in integration test and the normal unit suite from the same commit. Record the CI run URL or another independently retrievable test record.

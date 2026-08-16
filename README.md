@@ -48,6 +48,7 @@ PYTHONPATH=src python -m repolab_reference isolation-preflight /tmp/repolab-isol
 PYTHONPATH=src python -m repolab_reference docker-isolation-plan /tmp/repolab-docker-plan
 # Requires Docker and the exact image digest documented below.
 PYTHONPATH=src python -m repolab_reference docker-isolation-preflight /tmp/repolab-docker-preflight
+# Requires a clean Git worktree at the exact commit being reviewed.
 PYTHONPATH=src python -m repolab_reference security-review-bundle . /tmp/repolab-security-review
 ```
 
@@ -61,7 +62,7 @@ PYTHONPATH=src python -m repolab_reference security-review-bundle . /tmp/repolab
 
 **M2b preflight complete:** an active host-process negative control demonstrates that the isolation probe harness detects filesystem escape, history and sentinel exposure, verifier mutation, cache leakage, and unauthorized output. The preflight cannot approve a backend and keeps the real-agent security gate closed. See [M2b isolation preflight](docs/m2b-isolation-preflight.md).
 
-**M2b Docker backend hardened:** the trusted probe has a digest-pinned Docker policy with a read-only root, no network, three controlled mounts, a non-root identity, measured runtime restrictions, and bounded resources and output. The internal security review added an explicit local-daemon boundary, non-recursive binds, an Engine 29.4.3–29.x security range, image-volume rejection, and a deterministic independent-review handoff. The local Engine 29.2.1 is now rejected because its kernel patch status cannot be proven. Independent review remains `UNAVAILABLE`, so `security_gate_passed` and `safe_for_real_agents` remain false. See [M2b Docker backend](docs/m2b-docker-backend.md) and [internal security review](docs/security/m2b-internal-review-2026-08-10.md).
+**M2b Docker backend hardened:** the trusted probe has a digest-pinned Docker policy with a read-only root, no network, three controlled mounts, a non-root identity, measured runtime restrictions, and bounded resources and output. The internal security review added an explicit local-daemon boundary, non-recursive binds, an Engine 29.4.3–29.x security range, image-volume rejection, and a deterministic independent-review handoff. Bundle version 0.2 rejects dirty worktrees and binds every manifest to the exact Git commit object ID. The local Engine 29.2.1 is now rejected because its kernel patch status cannot be proven. Independent review remains `UNAVAILABLE`, so `security_gate_passed` and `safe_for_real_agents` remain false. See [M2b Docker backend](docs/m2b-docker-backend.md) and [internal security review](docs/security/m2b-internal-review-2026-08-10.md).
 
 The runners execute only built-in controlled fixture code and the trusted mock adapter; they are not active scanners or sandboxes for arbitrary repositories or real agents.
 
@@ -71,7 +72,7 @@ The next gate is an **independent security review of the exact M2b scope digest*
 
 1. upgrade the execution host to Docker Engine 29.4.3 through 29.x without bypassing the version check;
 2. pull the pinned image, run the live Docker preflight, and retain its receipt and rejected-export evidence;
-3. generate a fresh review bundle from the exact commit under review and independently verify every file hash in `manifest.json`;
+3. generate a fresh review bundle from a clean checkout of the exact commit under review, confirm its `git_commit_oid`, and independently verify every file hash in `manifest.json`;
 4. resolve or explicitly owner-accept SR-007 (image provenance and vulnerability maintenance) and SR-008 (runtime/kernel containment); and
 5. obtain a separately authenticated review decision that identifies the reviewer, commit, scope digest, evidence, finding dispositions, and residual risks.
 
