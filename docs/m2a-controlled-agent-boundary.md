@@ -38,7 +38,7 @@ All replacements are validated before any is written. Replacement bytes are stag
 ## Run locally
 
 ```bash
-PYTHONPATH=src python -m benchseal controlled-agent-replay /tmp/benchseal-controlled-agent
+PYTHONPATH=src python -m reposeal controlled-agent-replay /tmp/reposeal-controlled-agent
 ```
 
 The destination must not already exist. The command creates the controlled Git history, ten base snapshots, per-task adapter scratch directories, externally staged verifiers, and `receipt.json`.

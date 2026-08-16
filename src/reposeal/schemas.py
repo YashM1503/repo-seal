@@ -6,9 +6,9 @@ repository code, or claim that a task is semantically valid.
 
 from __future__ import annotations
 
+import json
 from dataclasses import asdict, dataclass, field
 from enum import Enum
-import json
 from typing import Any
 
 

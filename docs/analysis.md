@@ -1,6 +1,6 @@
 # Analysis of the RepoLab red-team memo
 
-> **2026-08-16 update:** The broad RepoLab product remains a no-go. The narrow task-evidence validator has been named BenchSeal and shipped as a local MVP. See [ADR 0002](adr/0002-benchseal-mvp.md). This does not authorize the original mining, agent-comparison, or automatic-optimization product.
+> **2026-08-16 update:** The broad RepoLab product remains a no-go. The narrow task-evidence validator shipped as BenchSeal and was subsequently renamed RepoSeal for clarity. See [ADR 0002](adr/0002-benchseal-mvp.md) and [ADR 0006](adr/0006-reposeal-rename.md). This does not authorize the original mining, agent-comparison, or automatic-optimization product.
 
 ## Decision
 

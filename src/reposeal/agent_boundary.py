@@ -366,7 +366,7 @@ def apply_patch_artifact(
     try:
         for index, replacement in enumerate(artifact.replacements):
             target = workspace.joinpath(*replacement.path.split("/"))
-            temporary = target.parent / f".benchseal-replacement-{os.getpid()}-{index}"
+            temporary = target.parent / f".reposeal-replacement-{os.getpid()}-{index}"
             descriptor = os.open(
                 temporary,
                 os.O_WRONLY | os.O_CREAT | os.O_EXCL,

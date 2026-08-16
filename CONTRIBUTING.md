@@ -1,12 +1,12 @@
-# Contributing to BenchSeal
+# Contributing to RepoSeal
 
-Thanks for helping improve BenchSeal. This guide explains what belongs in the project, how to make a change, and which safety rules must remain intact.
+Thanks for helping improve RepoSeal. This guide explains what belongs in the project, how to make a change, and which safety rules must remain intact.
 
-Unless you explicitly state otherwise, contributions submitted for inclusion in BenchSeal are licensed under the [Apache License 2.0](LICENSE), as described by section 5 of that license.
+Unless you explicitly state otherwise, contributions submitted for inclusion in RepoSeal are licensed under the [Apache License 2.0](LICENSE), as described by section 5 of that license.
 
 ## Start with the project boundary
 
-BenchSeal's MVP has one primary job: read recorded evidence about a coding-agent benchmark task, apply deterministic checks, and return an `ELIGIBLE` or `HOLD` decision with a reproducible receipt.
+RepoSeal's MVP has one primary job: read recorded evidence about a coding-agent benchmark task, apply deterministic checks, and return an `ELIGIBLE` or `HOLD` decision with a reproducible receipt.
 
 Good contributions make that workflow clearer, safer, easier to integrate, or better tested. Examples include:
 
@@ -18,15 +18,15 @@ Good contributions make that workflow clearer, safer, easier to integrate, or be
 - documentation improvements; and
 - fixes to receipt reproducibility or secret handling.
 
-Please do not expand BenchSeal into an agent platform, model leaderboard, dashboard, automatic prompt optimizer, hosted service, or general-purpose sandbox. Those ideas require a separate scope and security decision.
+Please do not expand RepoSeal into an agent platform, model leaderboard, dashboard, automatic prompt optimizer, hosted service, or general-purpose sandbox. Those ideas require a separate scope and security decision.
 
 ## Set up a development environment
 
-BenchSeal supports Python 3.9 and newer. The runtime uses only the Python standard library.
+RepoSeal supports Python 3.9 and newer. The runtime uses only the Python standard library.
 
 ```bash
-git clone https://github.com/YashM1503/repolab-reference.git
-cd repolab-reference
+git clone https://github.com/YashM1503/repo-seal.git
+cd repo-seal
 python -m venv .venv
 source .venv/bin/activate
 python -m pip install -e .
@@ -42,10 +42,10 @@ On Windows PowerShell, activate the environment with:
 Run the MVP against the included example:
 
 ```bash
-benchseal new-evidence /tmp/my-evidence.json --task-id my-task
-benchseal validate examples/evidence.json
-benchseal validate examples/evidence-set
-benchseal validate examples/evidence.json --json
+reposeal new-evidence /tmp/my-evidence.json --task-id my-task
+reposeal validate examples/evidence.json
+reposeal validate examples/evidence-set
+reposeal validate examples/evidence.json --json
 ```
 
 ## Make a focused change
@@ -56,7 +56,7 @@ Create a branch, keep unrelated edits out of the change, and add tests that demo
 git switch -c your-name/short-description
 ```
 
-Code in `src/benchseal/` should remain compatible with Python 3.9. Prefer immutable data structures, explicit limits, deterministic ordering, and standard-library solutions. Validation must fail closed: missing, malformed, unavailable, or ambiguous evidence must never be treated as a pass.
+Code in `src/reposeal/` should remain compatible with Python 3.9. Prefer immutable data structures, explicit limits, deterministic ordering, and standard-library solutions. Validation must fail closed: missing, malformed, unavailable, or ambiguous evidence must never be treated as a pass.
 
 User-facing errors should explain what is wrong and what the user can do next. Receipts must not contain temporary absolute paths, secrets, hidden-test contents, or unstable timestamps.
 
@@ -98,9 +98,9 @@ The minimum local verification is:
 ```bash
 python -m unittest discover -s tests -v
 python -m compileall -q src tests
-python -m benchseal check-fixtures tests/fixtures/falsification
-python -m benchseal validate examples/evidence.json --json
-python -m benchseal validate examples/evidence-set --json
+python -m reposeal check-fixtures tests/fixtures/falsification
+python -m reposeal validate examples/evidence.json --json
+python -m reposeal validate examples/evidence-set --json
 ```
 
 If Ruff is installed, also run it on the files you changed:
@@ -113,13 +113,13 @@ Docker integration is opt-in because it requires the pinned image and a policy-s
 
 ## Prepare a release
 
-BenchSeal releases must satisfy the acceptance boundary in [ADR 0004](docs/adr/0004-mvp-closure.md). Before changing the version or creating a tag:
+RepoSeal releases must satisfy the acceptance boundary in [ADR 0004](docs/adr/0004-mvp-closure.md). Before changing the version or creating a tag:
 
 1. update [CHANGELOG.md](CHANGELOG.md);
-2. confirm `pyproject.toml` and `src/benchseal/version.py` contain the same version;
+2. confirm `pyproject.toml` and `src/reposeal/version.py` contain the same version;
 3. run the full local verification above;
-4. build a wheel and test the installed `benchseal` command outside the source tree;
-5. confirm CI uses `benchseal`, not a removed package name;
+4. build a wheel and test the installed `reposeal` command outside the source tree;
+5. confirm CI uses `reposeal`, not a removed package name;
 6. generate a security-review bundle from the clean release commit; and
 7. keep both real-agent security gates closed unless an authenticated independent review covers that exact commit and scope digest.
 

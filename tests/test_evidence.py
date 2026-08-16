@@ -8,8 +8,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
-from benchseal.__main__ import main
-from benchseal.evidence import (
+from reposeal.__main__ import main
+from reposeal.evidence import (
     MAX_EVIDENCE_BYTES,
     TaskSetEvidenceReport,
     validate_evidence_file,
@@ -29,7 +29,8 @@ class TaskEvidenceReportTests(unittest.TestCase):
         self.assertEqual(first.decision, "ELIGIBLE")
         self.assertEqual(first.checks_evaluated, 12)
         self.assertEqual(first.findings, ())
-        self.assertEqual(first.to_dict()["tool_version"], "1.0.1")
+        self.assertEqual(first.to_dict()["tool_version"], "1.1.0")
+        self.assertEqual(first.to_dict()["tool"], "reposeal")
         self.assertEqual(first.to_dict()["report_kind"], "task")
         self.assertEqual(first.to_dict()["report_schema_version"], "0.2")
         self.assertIn("No blocking findings", first.to_text())
@@ -37,7 +38,7 @@ class TaskEvidenceReportTests(unittest.TestCase):
     def test_failing_evidence_is_held_with_a_clear_reason(self) -> None:
         payload = json.loads(EXAMPLE_EVIDENCE.read_text(encoding="utf-8"))
         payload["base_fails"] = False
-        with tempfile.TemporaryDirectory(prefix="benchseal-evidence-") as directory:
+        with tempfile.TemporaryDirectory(prefix="reposeal-evidence-") as directory:
             path = Path(directory) / "evidence.json"
             path.write_text(json.dumps(payload), encoding="utf-8")
             report = validate_evidence_file(path)
@@ -50,21 +51,21 @@ class TaskEvidenceReportTests(unittest.TestCase):
         self.assertIn("verifier is already green", report.to_text())
 
     def test_duplicate_fields_are_rejected(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="benchseal-evidence-") as directory:
+        with tempfile.TemporaryDirectory(prefix="reposeal-evidence-") as directory:
             path = Path(directory) / "evidence.json"
             path.write_text('{"task_id":"first","task_id":"second"}')
             with self.assertRaisesRegex(ValueError, "duplicate JSON field: task_id"):
                 validate_evidence_file(path)
 
     def test_oversized_evidence_is_rejected_before_parsing(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="benchseal-evidence-") as directory:
+        with tempfile.TemporaryDirectory(prefix="reposeal-evidence-") as directory:
             path = Path(directory) / "evidence.json"
             path.write_bytes(b" " * (MAX_EVIDENCE_BYTES + 1))
             with self.assertRaisesRegex(ValueError, "exceeds 1 MiB"):
                 validate_evidence_file(path)
 
     def test_symlink_evidence_is_rejected(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="benchseal-evidence-") as directory:
+        with tempfile.TemporaryDirectory(prefix="reposeal-evidence-") as directory:
             link = Path(directory) / "evidence-link.json"
             try:
                 link.symlink_to(EXAMPLE_EVIDENCE)
@@ -77,7 +78,7 @@ class TaskEvidenceReportTests(unittest.TestCase):
         payload = json.loads(EXAMPLE_EVIDENCE.read_text(encoding="utf-8"))
         payload["task_id"] = "example\nforged-line"
         payload["oracle_artifacts"] = ["\u001b[31mhidden-answer"]
-        with tempfile.TemporaryDirectory(prefix="benchseal-evidence-") as directory:
+        with tempfile.TemporaryDirectory(prefix="reposeal-evidence-") as directory:
             path = Path(directory) / "evidence.json"
             path.write_text(json.dumps(payload), encoding="utf-8")
             rendered = validate_evidence_file(path).to_text()
@@ -90,7 +91,7 @@ class TaskEvidenceReportTests(unittest.TestCase):
 
 class EvidenceDraftTests(unittest.TestCase):
     def test_draft_is_complete_in_shape_but_fail_closed(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="benchseal-draft-") as directory:
+        with tempfile.TemporaryDirectory(prefix="reposeal-draft-") as directory:
             path = Path(directory) / "nested" / "evidence.json"
             write_evidence_draft(path, "issue-123")
             payload = json.loads(path.read_text(encoding="utf-8"))
@@ -109,7 +110,7 @@ class EvidenceDraftTests(unittest.TestCase):
                 validate_evidence_file(path)
 
     def test_draft_never_overwrites_an_existing_path(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="benchseal-draft-") as directory:
+        with tempfile.TemporaryDirectory(prefix="reposeal-draft-") as directory:
             path = Path(directory) / "evidence.json"
             path.write_text("keep me\n", encoding="utf-8")
 
@@ -126,7 +127,7 @@ class TaskSetEvidenceReportTests(unittest.TestCase):
         held = dict(valid)
         held["task_id"] = "alpha"
         held["gold_passes"] = False
-        with tempfile.TemporaryDirectory(prefix="benchseal-batch-") as directory:
+        with tempfile.TemporaryDirectory(prefix="reposeal-batch-") as directory:
             root = Path(directory)
             (root / "a-valid.json").write_text(json.dumps(valid), encoding="utf-8")
             (root / "z-held.json").write_text(json.dumps(held), encoding="utf-8")
@@ -148,7 +149,7 @@ class TaskSetEvidenceReportTests(unittest.TestCase):
 
     def test_directory_rejects_duplicate_task_ids(self) -> None:
         payload = EXAMPLE_EVIDENCE.read_text(encoding="utf-8")
-        with tempfile.TemporaryDirectory(prefix="benchseal-batch-") as directory:
+        with tempfile.TemporaryDirectory(prefix="reposeal-batch-") as directory:
             root = Path(directory)
             (root / "first.json").write_text(payload, encoding="utf-8")
             (root / "second.json").write_text(payload, encoding="utf-8")
@@ -158,7 +159,7 @@ class TaskSetEvidenceReportTests(unittest.TestCase):
 
     def test_empty_directory_is_rejected(self) -> None:
         with (
-            tempfile.TemporaryDirectory(prefix="benchseal-batch-") as directory,
+            tempfile.TemporaryDirectory(prefix="reposeal-batch-") as directory,
             self.assertRaisesRegex(ValueError, "contains no JSON files"),
         ):
             validate_evidence_path(Path(directory))
@@ -172,12 +173,12 @@ class ValidateCommandTests(unittest.TestCase):
             exit_code = main(["validate", str(EXAMPLE_EVIDENCE)])
 
         self.assertEqual(exit_code, 0)
-        self.assertIn("BenchSeal task evidence report", output.getvalue())
+        self.assertIn("RepoSeal task evidence report", output.getvalue())
         self.assertIn("Decision: ELIGIBLE", output.getvalue())
 
     def test_json_output_can_be_saved_as_a_receipt(self) -> None:
         output = StringIO()
-        with tempfile.TemporaryDirectory(prefix="benchseal-cli-") as directory:
+        with tempfile.TemporaryDirectory(prefix="reposeal-cli-") as directory:
             receipt = Path(directory) / "receipt.json"
             with redirect_stdout(output):
                 exit_code = main(
@@ -197,7 +198,7 @@ class ValidateCommandTests(unittest.TestCase):
 
     def test_receipt_output_never_overwrites_an_existing_path(self) -> None:
         errors = StringIO()
-        with tempfile.TemporaryDirectory(prefix="benchseal-cli-") as directory:
+        with tempfile.TemporaryDirectory(prefix="reposeal-cli-") as directory:
             receipt = Path(directory) / "receipt.json"
             receipt.write_text("keep me\n", encoding="utf-8")
             with redirect_stderr(errors):
@@ -212,7 +213,7 @@ class ValidateCommandTests(unittest.TestCase):
 
     def test_receipt_output_never_follows_a_symbolic_link(self) -> None:
         errors = StringIO()
-        with tempfile.TemporaryDirectory(prefix="benchseal-cli-") as directory:
+        with tempfile.TemporaryDirectory(prefix="reposeal-cli-") as directory:
             root = Path(directory)
             target = root / "target.json"
             receipt = root / "receipt.json"
@@ -234,7 +235,7 @@ class ValidateCommandTests(unittest.TestCase):
 
     def test_invalid_input_uses_exit_code_two(self) -> None:
         errors = StringIO()
-        with tempfile.TemporaryDirectory(prefix="benchseal-cli-") as directory:
+        with tempfile.TemporaryDirectory(prefix="reposeal-cli-") as directory:
             path = Path(directory) / "invalid.json"
             path.write_text("[]", encoding="utf-8")
             with redirect_stderr(errors):
@@ -247,7 +248,7 @@ class ValidateCommandTests(unittest.TestCase):
         payload = json.loads(EXAMPLE_EVIDENCE.read_text(encoding="utf-8"))
         payload["gold_passes"] = False
         output = StringIO()
-        with tempfile.TemporaryDirectory(prefix="benchseal-cli-") as directory:
+        with tempfile.TemporaryDirectory(prefix="reposeal-cli-") as directory:
             path = Path(directory) / "held.json"
             path.write_text(json.dumps(payload), encoding="utf-8")
             with redirect_stdout(output):
@@ -259,7 +260,7 @@ class ValidateCommandTests(unittest.TestCase):
 
     def test_new_evidence_command_creates_a_draft(self) -> None:
         output = StringIO()
-        with tempfile.TemporaryDirectory(prefix="benchseal-cli-") as directory:
+        with tempfile.TemporaryDirectory(prefix="reposeal-cli-") as directory:
             path = Path(directory) / "evidence.json"
             with redirect_stdout(output):
                 exit_code = main(
@@ -273,7 +274,7 @@ class ValidateCommandTests(unittest.TestCase):
 
     def test_directory_command_returns_an_aggregate_json_receipt(self) -> None:
         output = StringIO()
-        with tempfile.TemporaryDirectory(prefix="benchseal-cli-") as directory:
+        with tempfile.TemporaryDirectory(prefix="reposeal-cli-") as directory:
             root = Path(directory)
             payload = EXAMPLE_EVIDENCE.read_text(encoding="utf-8")
             (root / "evidence.json").write_text(payload, encoding="utf-8")

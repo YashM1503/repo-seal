@@ -2,7 +2,7 @@
 
 ## Prototype warning
 
-The primary `benchseal validate` command reads one bounded JSON evidence document, applies deterministic checks, and writes an optional receipt. It does not execute repository code or contact a network service. An `ELIGIBLE` decision is only as trustworthy as the process that collected the supplied observations; it is not a sandbox certificate or an independent security review.
+The primary `reposeal validate` command reads one bounded JSON evidence document, applies deterministic checks, and writes an optional receipt. It does not execute repository code or contact a network service. An `ELIGIBLE` decision is only as trustworthy as the process that collected the supplied observations; it is not a sandbox certificate or an independent security review.
 
 This repository executes only its built-in controlled fixtures and trusted M2a mock adapter. The subprocess protocol and patch validator are not a secure sandbox. Do not point either runner at arbitrary repositories, substitute an untrusted adapter, connect a real coding agent, mount provider credentials, or expose hidden tests until an independently reviewed isolation layer exists.
 

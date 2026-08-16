@@ -6,18 +6,18 @@ process, filesystem, credential, or network isolation for arbitrary code.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import hashlib
 import io
 import json
-import os
-from pathlib import Path, PurePosixPath
 import re
 import stat
 import subprocess
 import sys
 import tarfile
-from typing import Any, Iterable
+from collections.abc import Iterable
+from dataclasses import dataclass
+from pathlib import Path, PurePosixPath
+from typing import Any
 
 from .schemas import ValidationCode
 
@@ -290,8 +290,7 @@ def snapshot_commit(repository: Path, commit: str, destination: Path) -> str:
         ["git", "archive", "--format=tar", commit],
         cwd=repository,
         check=False,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
     )
     if completed.returncode != 0:
         detail = completed.stderr.decode("utf-8", errors="replace").strip()
@@ -355,8 +354,7 @@ def _run_verifier_once(
         cwd=workspace,
         env=environment,
         check=False,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
         timeout=10,
     )
     stdout = completed.stdout

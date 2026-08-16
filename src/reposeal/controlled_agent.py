@@ -207,7 +207,7 @@ def replay_controlled_agent_suite(
     verifier_source: Path,
     work_root: Path,
     *,
-    adapter_script: Optional[Path] = None,  # noqa: UP045 - Python 3.9 support
+    adapter_script: Optional[Path] = None,
     repetitions: int = 2,
 ) -> ControlledAgentSuiteReceipt:
     """Replay trusted mock artifacts across controlled source snapshots only."""

@@ -1,28 +1,28 @@
-# BenchSeal
+# RepoSeal
 
-BenchSeal checks whether the recorded evidence for a coding-agent benchmark task is strong enough to use.
+RepoSeal checks whether the recorded evidence for a coding-agent benchmark task is strong enough to use.
 
-Give it a JSON evidence file. BenchSeal checks for common reasons a benchmark task can mislead you: the test already passed before the fix, the accepted fix still fails, the verifier is flaky, hidden answers are exposed, future Git history is visible, the grader can be changed, the network is open, or known-broken solutions still pass. It then returns one of two decisions:
+Give it a JSON evidence file. RepoSeal checks for common reasons a benchmark task can mislead you: the test already passed before the fix, the accepted fix still fails, the verifier is flaky, hidden answers are exposed, future Git history is visible, the grader can be changed, the network is open, or known-broken solutions still pass. It then returns one of two decisions:
 
 - `ELIGIBLE` — none of the recorded checks found a blocking problem.
 - `HOLD` — at least one problem must be investigated or corrected.
 
-BenchSeal is intentionally small. It does not mine pull requests, run a coding agent, or claim that tests are ground truth. The MVP validates evidence collected by a trusted process and produces a reviewable receipt.
+RepoSeal is intentionally small. It does not mine pull requests, run a coding agent, or claim that tests are ground truth. The MVP validates evidence collected by a trusted process and produces a reviewable receipt.
 
-## Try BenchSeal
+## Try RepoSeal
 
-BenchSeal requires Python 3.9 or newer and has no runtime dependencies outside the standard library.
+RepoSeal requires Python 3.9 or newer and has no runtime dependencies outside the standard library.
 
 ```bash
 python -m pip install -e .
-benchseal --version
-benchseal validate examples/evidence.json
+reposeal --version
+reposeal validate examples/evidence.json
 ```
 
 The example produces a human-readable report:
 
 ```text
-BenchSeal task evidence report
+RepoSeal task evidence report
 Task: example-fix-001
 Decision: ELIGIBLE
 Evidence: sha256:...
@@ -34,15 +34,15 @@ No blocking findings were recorded.
 Create a draft for your own task:
 
 ```bash
-benchseal new-evidence ./payment-fix.json --task-id payment-fix-123
+reposeal new-evidence ./payment-fix.json --task-id payment-fix-123
 ```
 
-Every observation in a new draft is `null`. The draft cannot pass validation until you replace each `null` with evidence collected by a trusted process. BenchSeal never fills unknown values with optimistic defaults.
+Every observation in a new draft is `null`. The draft cannot pass validation until you replace each `null` with evidence collected by a trusted process. RepoSeal never fills unknown values with optimistic defaults.
 
 Validate a directory when you have more than one task:
 
 ```bash
-benchseal validate examples/evidence-set
+reposeal validate examples/evidence-set
 ```
 
 Directory validation reads the `.json` files directly inside that directory, rejects duplicate task IDs, and produces one aggregate decision. If any task is on hold, the task set is on hold. The JSON receipt identifies itself with `report_kind: "task_set"` and includes a filename-independent `task_set_sha256`.
@@ -50,12 +50,12 @@ Directory validation reads the `.json` files directly inside that directory, rej
 For CI or another tool, request JSON and save the receipt:
 
 ```bash
-benchseal validate examples/evidence.json \
+reposeal validate examples/evidence.json \
   --json \
-  --output /tmp/benchseal-receipt.json
+  --output /tmp/reposeal-receipt.json
 ```
 
-BenchSeal uses predictable exit codes:
+RepoSeal uses predictable exit codes:
 
 | Exit code | Meaning |
 | --- | --- |
@@ -91,7 +91,7 @@ Input parsing is strict. Missing fields, unknown fields, duplicate JSON keys, in
 
 ## What an `ELIGIBLE` decision does not prove
 
-`ELIGIBLE` means only that the supplied observations passed BenchSeal's deterministic rules. It does not prove that:
+`ELIGIBLE` means only that the supplied observations passed RepoSeal's deterministic rules. It does not prove that:
 
 - the observations were collected honestly or correctly;
 - the task statement is complete in every semantic detail;
@@ -103,24 +103,24 @@ Keep the evidence receipt beside the collection logs and environment metadata th
 
 ## Project status
 
-Version 1.0 closes the narrowly defined MVP for evidence drafts, single-task validation, task-set validation, and deterministic receipts. The supported command-line workflow is installable, tested on Python 3.9, 3.11, and 3.13, and documented with stable exit codes and fail-closed input handling.
+Version 1.1 is the first RepoSeal release. It keeps the completed 1.0 validator boundary while giving the product, distribution, import package, and command a name that describes what users actually run. The supported command-line workflow is installable, tested on Python 3.9, 3.11, and 3.13, and documented with stable exit codes and fail-closed input handling.
 
 MVP completion does not include collecting the observations, running a coding agent, executing an arbitrary repository, or certifying an isolation system. Those are separate security-sensitive products, not unfinished pieces hidden behind the 1.0 label. The older controlled replay, mock-agent boundary, and Docker isolation experiments remain in the repository as research tools. They are not the primary product surface and are not approved for arbitrary repositories or real agents.
 
 The exact acceptance boundary is recorded in [ADR 0004](docs/adr/0004-mvp-closure.md), and release changes are listed in [CHANGELOG.md](CHANGELOG.md).
 
-The original project was called RepoLab Reference. It was renamed because the broader “mine history and optimize coding agents” product overlaps existing systems. BenchSeal keeps the useful, narrow component: fail-closed task-evidence validation. The reasoning is preserved in the [red-team analysis](docs/analysis.md), [original scope decision](docs/adr/0001-private-reference-scope.md), [BenchSeal MVP decision](docs/adr/0002-benchseal-mvp.md), [evidence workflow decision](docs/adr/0003-evidence-workflow.md), and [MVP closure decision](docs/adr/0004-mvp-closure.md).
+The original project was called RepoLab Reference. Its broad “mine history and optimize coding agents” direction was rejected because it overlaps existing systems. The narrow validator first shipped as BenchSeal and is now called RepoSeal: a direct description of its job as a repository-evidence gate. The reasoning is preserved in the [red-team analysis](docs/analysis.md), [original scope decision](docs/adr/0001-private-reference-scope.md), [BenchSeal MVP decision](docs/adr/0002-benchseal-mvp.md), [evidence workflow decision](docs/adr/0003-evidence-workflow.md), [MVP closure decision](docs/adr/0004-mvp-closure.md), and [RepoSeal rename decision](docs/adr/0006-reposeal-rename.md).
 
 ## Advanced research commands
 
-These commands exercise repository-owned fixtures and controlled probes. They are for development of BenchSeal's evidence model, not for evaluating untrusted projects.
+These commands exercise repository-owned fixtures and controlled probes. They are for development of RepoSeal's evidence model, not for evaluating untrusted projects.
 
 ```bash
-python -m benchseal check-fixtures tests/fixtures/falsification
-python -m benchseal controlled-replay /tmp/benchseal-controlled-replay
-python -m benchseal controlled-agent-replay /tmp/benchseal-controlled-agent
-python -m benchseal isolation-preflight /tmp/benchseal-isolation-preflight
-python -m benchseal docker-isolation-plan /tmp/benchseal-docker-plan
+python -m reposeal check-fixtures tests/fixtures/falsification
+python -m reposeal controlled-replay /tmp/reposeal-controlled-replay
+python -m reposeal controlled-agent-replay /tmp/reposeal-controlled-agent
+python -m reposeal isolation-preflight /tmp/reposeal-isolation-preflight
+python -m reposeal docker-isolation-plan /tmp/reposeal-docker-plan
 ```
 
 The live Docker probe and security-review handoff have additional requirements documented in [the Docker backend guide](docs/m2b-docker-backend.md). Independent review is still unavailable, so `security_gate_passed` and `safe_for_real_agents` remain false.
@@ -128,7 +128,7 @@ The live Docker probe and security-review handoff have additional requirements d
 ## Repository layout
 
 ```text
-src/benchseal/       package and command-line implementation
+src/reposeal/        package and command-line implementation
 examples/            small inputs you can run locally
 tests/               unit, replay, and adversarial fixtures
 docs/                design decisions and security research
@@ -146,4 +146,4 @@ Read [SECURITY.md](SECURITY.md) before changing any runner, verifier, Docker pol
 
 ## License
 
-BenchSeal is licensed under the [Apache License 2.0](LICENSE). The license includes an explicit patent grant from contributors. See [ADR 0005](docs/adr/0005-public-apache-release.md) for the public-release decision and its scope.
+RepoSeal is licensed under the [Apache License 2.0](LICENSE). The license includes an explicit patent grant from contributors. See [ADR 0005](docs/adr/0005-public-apache-release.md) for the public-release decision and its scope.

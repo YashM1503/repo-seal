@@ -7,7 +7,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
-from benchseal.isolation import (
+from reposeal.isolation import (
     REQUIRED_CONTROLS,
     ControlStatus,
     IsolationControl,
@@ -21,7 +21,7 @@ from benchseal.isolation import (
 class HostProcessNegativeControlTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        cls.temporary = tempfile.TemporaryDirectory(prefix="benchseal-isolation-")
+        cls.temporary = tempfile.TemporaryDirectory(prefix="reposeal-isolation-")
         cls.root = Path(cls.temporary.name)
         cls.first = run_host_process_negative_control(cls.root / "run-a")
         cls.second = run_host_process_negative_control(cls.root / "run-b")
@@ -72,9 +72,9 @@ class HostProcessNegativeControlTests(unittest.TestCase):
         rendered = self.first.to_json()
 
         self.assertNotIn(str(self.root), rendered)
-        self.assertNotIn("benchseal-secret-credential-value", rendered)
-        self.assertNotIn("benchseal-secret-history-value", rendered)
-        self.assertNotIn("benchseal-secret-cache-value", rendered)
+        self.assertNotIn("reposeal-secret-credential-value", rendered)
+        self.assertNotIn("reposeal-secret-history-value", rendered)
+        self.assertNotIn("reposeal-secret-cache-value", rendered)
 
     def test_existing_work_root_is_rejected(self) -> None:
         with self.assertRaisesRegex(ValueError, "must not already exist"):
@@ -83,7 +83,7 @@ class HostProcessNegativeControlTests(unittest.TestCase):
 
 class ExportPolicyTests(unittest.TestCase):
     def setUp(self) -> None:
-        self.temporary = tempfile.TemporaryDirectory(prefix="benchseal-export-")
+        self.temporary = tempfile.TemporaryDirectory(prefix="reposeal-export-")
         self.root = Path(self.temporary.name)
         self.export = self.root / "export"
         self.export.mkdir()

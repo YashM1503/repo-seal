@@ -3,14 +3,14 @@ requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "benchseal"
-version = "1.0.1"
+name = "repo-seal"
+version = "1.1.0"
 description = "Fail-closed checks for coding-agent benchmark-task evidence"
 readme = "README.md"
 requires-python = ">=3.9"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
-authors = [{ name = "BenchSeal contributors" }]
+authors = [{ name = "RepoSeal contributors" }]
 classifiers = [
   "Development Status :: 4 - Beta",
   "Programming Language :: Python :: 3",
@@ -18,11 +18,11 @@ classifiers = [
 ]
 
 [project.scripts]
-benchseal = "benchseal.__main__:main"
+reposeal = "reposeal.__main__:main"
 
 [project.urls]
-Repository = "https://github.com/YashM1503/repolab-reference"
-Issues = "https://github.com/YashM1503/repolab-reference/issues"
+Repository = "https://github.com/YashM1503/repo-seal"
+Issues = "https://github.com/YashM1503/repo-seal/issues"
 
 [tool.ruff]
 target-version = "py39"

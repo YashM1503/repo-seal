@@ -48,7 +48,7 @@ The generated `docker run` command enforces:
 - `nofile=64`, `fsize=1 MiB`, `core=0`, a 64 KiB streaming-output cap, and a 15-second wall deadline;
 - exactly three private bind mounts: one temporary trusted-probe file read-only, a writable disposable workspace, and a dedicated writable export directory; writable binds exclude recursive submounts;
 - a complete explicit runtime environment layered over the inspected fixed keys from the pinned image;
-- an exact `python3 -I -B /benchseal-isolation-probe.py` entrypoint.
+- an exact `python3 -I -B /reposeal-isolation-probe.py` entrypoint.
 
 The validator rejects remote Docker endpoints, cross-architecture emulation, privileged mode, host network/PID/IPC namespaces, added capabilities, devices, environment files, Docker API sockets, generic volumes, unexpected mount destinations, and arbitrary container names. Image inspection also rejects image-declared volumes.
 
@@ -65,19 +65,19 @@ The kernel finding also requires a Linux image and engine, built-in seccomp, a p
 Render the deterministic policy without contacting Docker:
 
 ```bash
-PYTHONPATH=src python -m benchseal docker-isolation-plan /tmp/benchseal-docker-plan
+PYTHONPATH=src python -m reposeal docker-isolation-plan /tmp/reposeal-docker-plan
 ```
 
 Run the live backend after pulling the pinned image and upgrading the Docker Engine into the supported 29.4.3–29.x range:
 
 ```bash
-PYTHONPATH=src python -m benchseal docker-isolation-preflight /tmp/benchseal-docker-isolation
+PYTHONPATH=src python -m reposeal docker-isolation-preflight /tmp/reposeal-docker-isolation
 ```
 
 Run the opt-in integration test directly:
 
 ```bash
-BENCHSEAL_RUN_DOCKER_INTEGRATION=1 \
+REPOSEAL_RUN_DOCKER_INTEGRATION=1 \
   python -W error::ResourceWarning -m unittest \
   tests.test_docker_backend.DockerLiveIntegrationTests -v
 ```
@@ -87,8 +87,8 @@ Each output directory must not already exist. The CLI writes `receipt.json`; the
 Generate the deterministic handoff for an independent reviewer:
 
 ```bash
-PYTHONPATH=src python -m benchseal \
-  security-review-bundle . /tmp/benchseal-security-review
+PYTHONPATH=src python -m reposeal \
+  security-review-bundle . /tmp/reposeal-security-review
 ```
 
 The repository must be at its Git worktree root with no tracked or untracked changes. Bundle version 0.2 resolves the commit twice around file hashing, rejects a moving or dirty source tree before writing output, and records `git_commit_oid`, `git_object_format`, and `git_worktree_clean: true`. The generated manifest otherwise contains only relative paths, file hashes, policy and command-template digests, and closed-gate review status. Its checklist cannot itself approve the boundary.

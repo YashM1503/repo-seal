@@ -1,4 +1,4 @@
-"""BenchSeal task-evidence validation and research primitives."""
+"""RepoSeal task-evidence validation and research primitives."""
 
 from .agent_boundary import (
     AgentBoundaryError,

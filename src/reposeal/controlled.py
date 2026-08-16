@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import os
-from pathlib import Path
 import subprocess
+from dataclasses import dataclass
+from pathlib import Path
 from typing import Optional
 
 from .replay import ReplayError, ReplayTask
@@ -263,10 +263,10 @@ def _commit(repository: Path, message: str, sequence: int) -> None:
     environment = os.environ.copy()
     environment.update(
         {
-            "GIT_AUTHOR_NAME": "BenchSeal Fixture",
+            "GIT_AUTHOR_NAME": "RepoSeal Fixture",
             "GIT_AUTHOR_EMAIL": "fixture@example.invalid",
             "GIT_AUTHOR_DATE": timestamp,
-            "GIT_COMMITTER_NAME": "BenchSeal Fixture",
+            "GIT_COMMITTER_NAME": "RepoSeal Fixture",
             "GIT_COMMITTER_EMAIL": "fixture@example.invalid",
             "GIT_COMMITTER_DATE": timestamp,
         }
@@ -301,8 +301,7 @@ def _git(
         cwd=repository,
         env=environment,
         check=False,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
         text=True,
     )
     if completed.returncode != 0:

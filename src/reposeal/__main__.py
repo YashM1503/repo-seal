@@ -1,4 +1,4 @@
-"""Command-line entrypoint for BenchSeal."""
+"""Command-line entrypoint for RepoSeal."""
 
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ from .version import __version__
 
 def main(argv: Optional[list[str]] = None) -> int:
     parser = argparse.ArgumentParser(
-        prog="benchseal",
+        prog="reposeal",
         description="Fail-closed checks for coding-agent benchmark evidence.",
     )
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
@@ -135,11 +135,11 @@ def _new_evidence(output_file: Path, task_id: str) -> int:
         write_evidence_draft(output_file, task_id)
         print(f"Created evidence draft: {_terminal_text(str(output_file))}")
         print("Replace every null with a measured observation, then run:")
-        print(f"  benchseal validate {_terminal_text(str(output_file))}")
+        print(f"  reposeal validate {_terminal_text(str(output_file))}")
         return 0
     except (OSError, ValueError) as error:
         print(
-            f"BenchSeal could not create evidence: {_terminal_text(str(error))}",
+            f"RepoSeal could not create evidence: {_terminal_text(str(error))}",
             file=sys.stderr,
         )
         return 2
@@ -160,7 +160,7 @@ def _validate_evidence(
         return 0 if report.eligible else 1
     except (OSError, TypeError, ValueError) as error:
         print(
-            f"BenchSeal could not validate evidence: {_terminal_text(str(error))}",
+            f"RepoSeal could not validate evidence: {_terminal_text(str(error))}",
             file=sys.stderr,
         )
         return 2

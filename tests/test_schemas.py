@@ -1,19 +1,17 @@
 import json
-from pathlib import Path
 import sys
 import unittest
-
+from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
-from benchseal import (  # noqa: E402
+from reposeal import (
     DecisionReceipt,
     EnvironmentPolicy,
     TaskManifest,
     TaskQualityRecord,
     ValidationCode,
 )
-
 
 DIGEST_A = "sha256:" + ("a" * 64)
 DIGEST_B = "sha256:" + ("b" * 64)

@@ -1,21 +1,19 @@
-from collections import Counter
-from contextlib import redirect_stdout
 import io
-from pathlib import Path
 import sys
 import unittest
-
+from collections import Counter
+from contextlib import redirect_stdout
+from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
-from benchseal import (  # noqa: E402
+from reposeal import (
     FalsificationEvidence,
     ValidationCode,
     check_fixture,
 )
-from benchseal.__main__ import main  # noqa: E402
-from benchseal.falsification import iter_fixture_paths  # noqa: E402
-
+from reposeal.__main__ import main
+from reposeal.falsification import iter_fixture_paths
 
 FIXTURE_DIRECTORY = Path(__file__).parent / "fixtures" / "falsification"
 

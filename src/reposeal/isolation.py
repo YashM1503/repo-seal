@@ -316,16 +316,16 @@ def run_host_process_negative_control(
 
     (workspace / "input.txt").write_text("controlled source\n", encoding="utf-8")
     history_sentinel = history / "future-object"
-    history_sentinel.write_text("benchseal-secret-history-value\n", encoding="utf-8")
+    history_sentinel.write_text("reposeal-secret-history-value\n", encoding="utf-8")
     verifier = trusted / "trusted_verifier.py"
     verifier.write_text("trusted verifier\n", encoding="utf-8")
     verifier.chmod(0o444)
     credential_sentinel = credential / "token"
     credential_sentinel.write_text(
-        "benchseal-secret-credential-value\n", encoding="utf-8"
+        "reposeal-secret-credential-value\n", encoding="utf-8"
     )
     cache_sentinel = foreign_cache / "cache-key"
-    cache_sentinel.write_text("benchseal-secret-cache-value\n", encoding="utf-8")
+    cache_sentinel.write_text("reposeal-secret-cache-value\n", encoding="utf-8")
     outside_target = outside / "escaped.txt"
 
     expected_history_sha256 = file_sha256(history_sentinel)
@@ -393,7 +393,7 @@ def run_host_process_negative_control(
             try:
                 connection, _ = listener.accept()
                 with connection:
-                    network_observed = connection.recv(64) == b"benchseal-isolation-probe"
+                    network_observed = connection.recv(64) == b"reposeal-isolation-probe"
             except (socket.timeout, OSError):
                 network_observed = False
     finally:

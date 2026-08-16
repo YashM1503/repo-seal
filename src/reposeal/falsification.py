@@ -6,10 +6,11 @@ repository code, inspect live credentials, or claim to provide a sandbox.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 import json
+from collections.abc import Iterable, Mapping
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Iterable, Mapping, Optional
+from typing import Any, Callable, Optional
 
 from .schemas import ValidationCode
 
@@ -52,7 +53,7 @@ class FalsificationEvidence:
         if isinstance(self.flake_rate, bool) or not isinstance(
             self.flake_rate, (int, float)
         ):
-            raise ValueError("flake_rate must be a number")
+            raise ValueError("flake_rate must be a number")  # noqa: TRY004
         if not 0.0 <= self.flake_rate <= 1.0:
             raise ValueError("flake_rate must be between 0 and 1")
         for name in ("oracle_artifacts", "grader_tamper_vectors", "cache_leaks"):
@@ -74,14 +75,14 @@ class FalsificationEvidence:
         ):
             value = getattr(self, name)
             if isinstance(value, bool) or not isinstance(value, int):
-                raise ValueError(f"{name} must be an integer")
+                raise ValueError(f"{name} must be an integer")  # noqa: TRY004
             if value < 0:
                 raise ValueError(f"{name} must not be negative")
         if self.broken_patch_passes > self.broken_patch_trials:
             raise ValueError("broken_patch_passes cannot exceed broken_patch_trials")
 
     @classmethod
-    def from_dict(cls, payload: Mapping[str, Any]) -> "FalsificationEvidence":
+    def from_dict(cls, payload: Mapping[str, Any]) -> FalsificationEvidence:
         allowed = {
             "schema_version",
             "task_id",
@@ -184,7 +185,7 @@ class FalsificationFixture:
             raise ValueError(f"unsupported fixture_version: {self.fixture_version}")
 
     @classmethod
-    def from_dict(cls, payload: Mapping[str, Any]) -> "FalsificationFixture":
+    def from_dict(cls, payload: Mapping[str, Any]) -> FalsificationFixture:
         allowed = {"fixture_version", "name", "expected_failures", "evidence"}
         unknown = sorted(set(payload) - allowed)
         if unknown:
@@ -201,7 +202,7 @@ class FalsificationFixture:
 
         evidence_raw = payload.get("evidence")
         if not isinstance(evidence_raw, dict):
-            raise ValueError("evidence must be an object")
+            raise ValueError("evidence must be an object")  # noqa: TRY004
 
         return cls(
             fixture_version=_optional_string(payload, "fixture_version", "0.1"),
@@ -229,7 +230,7 @@ def load_fixture(path: Path) -> FalsificationFixture:
     with path.open("r", encoding="utf-8") as handle:
         payload = json.load(handle)
     if not isinstance(payload, dict):
-        raise ValueError("fixture root must be an object")
+        raise ValueError("fixture root must be an object")  # noqa: TRY004
     return FalsificationFixture.from_dict(payload)
 
 
@@ -411,7 +412,7 @@ def _required_number(payload: Mapping[str, Any], key: str) -> float:
         raise ValueError(f"missing required evidence field: {key}")
     value = payload[key]
     if isinstance(value, bool) or not isinstance(value, (int, float)):
-        raise ValueError(f"{key} must be a number")
+        raise ValueError(f"{key} must be a number")  # noqa: TRY004
     return float(value)
 
 
@@ -420,7 +421,7 @@ def _required_int(payload: Mapping[str, Any], key: str) -> int:
         raise ValueError(f"missing required evidence field: {key}")
     value = payload[key]
     if isinstance(value, bool) or not isinstance(value, int):
-        raise ValueError(f"{key} must be an integer")
+        raise ValueError(f"{key} must be an integer")  # noqa: TRY004
     return value
 
 

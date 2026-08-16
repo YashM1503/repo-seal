@@ -1,6 +1,13 @@
 # Changelog
 
-This file records user-visible BenchSeal changes. Dates use `YYYY-MM-DD`.
+This file records user-visible RepoSeal changes. Dates use `YYYY-MM-DD`.
+
+## 1.1.0 — 2026-08-16
+
+- Renamed the product from BenchSeal to RepoSeal so the name directly describes the repository-evidence validation workflow.
+- Renamed the distribution to `repo-seal`, the Python package and command to `reposeal`, and receipt tool identifiers to `reposeal`.
+- Moved the public project home to `YashM1503/repo-seal` and documented the breaking rename in ADR 0006.
+- Kept the completed validator boundary and both real-agent security gates unchanged and closed.
 
 ## 1.0.1 — 2026-08-16
 

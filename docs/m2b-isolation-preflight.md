@@ -57,7 +57,7 @@ If the surrounding runtime prevents creation of the loopback listener or blocks 
 ## Run locally
 
 ```bash
-PYTHONPATH=src python -m benchseal isolation-preflight /tmp/benchseal-isolation-preflight
+PYTHONPATH=src python -m reposeal isolation-preflight /tmp/reposeal-isolation-preflight
 ```
 
 Expected top-level receipt facts are:

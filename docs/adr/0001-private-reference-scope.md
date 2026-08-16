@@ -1,6 +1,6 @@
 # ADR 0001: Keep RepoLab as a private reference incubator
 
-> **2026-08-16 update:** Superseded for the narrow BenchSeal validator by [ADR 0005](0005-public-apache-release.md). The no-go decision for the broader RepoLab product remains in force.
+> **2026-08-16 update:** Superseded for the narrow validator by [ADR 0005](0005-public-apache-release.md), with its later RepoSeal name recorded in [ADR 0006](0006-reposeal-rename.md). The no-go decision for the broader RepoLab product remains in force.
 
 - Status: Accepted
 - Date: 2026-08-09

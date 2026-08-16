@@ -42,7 +42,7 @@ class TaskEvidenceReport:
         return {
             "report_schema_version": self.report_schema_version,
             "report_kind": "task",
-            "tool": "benchseal",
+            "tool": "reposeal",
             "tool_version": __version__,
             "task_id": self.task_id,
             "decision": self.decision,
@@ -58,7 +58,7 @@ class TaskEvidenceReport:
 
     def to_text(self) -> str:
         lines = [
-            "BenchSeal task evidence report",
+            "RepoSeal task evidence report",
             f"Task: {_display_text(self.task_id)}",
             f"Decision: {self.decision}",
             f"Evidence: {self.evidence_sha256}",
@@ -146,7 +146,7 @@ class TaskSetEvidenceReport:
         return {
             "report_schema_version": self.report_schema_version,
             "report_kind": "task_set",
-            "tool": "benchseal",
+            "tool": "reposeal",
             "tool_version": __version__,
             "decision": self.decision,
             "eligible": self.eligible,
@@ -162,7 +162,7 @@ class TaskSetEvidenceReport:
 
     def to_text(self) -> str:
         lines = [
-            "BenchSeal task set report",
+            "RepoSeal task set report",
             f"Decision: {self.decision}",
             f"Tasks: {len(self.tasks)}",
             f"Eligible: {self.eligible_count}",
