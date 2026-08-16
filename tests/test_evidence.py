@@ -29,7 +29,7 @@ class TaskEvidenceReportTests(unittest.TestCase):
         self.assertEqual(first.decision, "ELIGIBLE")
         self.assertEqual(first.checks_evaluated, 12)
         self.assertEqual(first.findings, ())
-        self.assertEqual(first.to_dict()["tool_version"], "0.9.0")
+        self.assertEqual(first.to_dict()["tool_version"], "1.0.0")
         self.assertEqual(first.to_dict()["report_kind"], "task")
         self.assertEqual(first.to_dict()["report_schema_version"], "0.2")
         self.assertIn("No blocking findings", first.to_text())
@@ -194,6 +194,43 @@ class ValidateCommandTests(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         self.assertEqual(json.loads(output.getvalue()), saved)
         self.assertEqual(saved["decision"], "ELIGIBLE")
+
+    def test_receipt_output_never_overwrites_an_existing_path(self) -> None:
+        errors = StringIO()
+        with tempfile.TemporaryDirectory(prefix="benchseal-cli-") as directory:
+            receipt = Path(directory) / "receipt.json"
+            receipt.write_text("keep me\n", encoding="utf-8")
+            with redirect_stderr(errors):
+                exit_code = main(
+                    ["validate", str(EXAMPLE_EVIDENCE), "--output", str(receipt)]
+                )
+
+            self.assertEqual(receipt.read_text(encoding="utf-8"), "keep me\n")
+
+        self.assertEqual(exit_code, 2)
+        self.assertIn("output file must not already exist", errors.getvalue())
+
+    def test_receipt_output_never_follows_a_symbolic_link(self) -> None:
+        errors = StringIO()
+        with tempfile.TemporaryDirectory(prefix="benchseal-cli-") as directory:
+            root = Path(directory)
+            target = root / "target.json"
+            receipt = root / "receipt.json"
+            try:
+                receipt.symlink_to(target)
+            except OSError as error:
+                self.skipTest(f"symlinks are unavailable: {error}")
+
+            with redirect_stderr(errors):
+                exit_code = main(
+                    ["validate", str(EXAMPLE_EVIDENCE), "--output", str(receipt)]
+                )
+
+            self.assertTrue(receipt.is_symlink())
+            self.assertFalse(target.exists())
+
+        self.assertEqual(exit_code, 2)
+        self.assertIn("output file must not already exist", errors.getvalue())
 
     def test_invalid_input_uses_exit_code_two(self) -> None:
         errors = StringIO()

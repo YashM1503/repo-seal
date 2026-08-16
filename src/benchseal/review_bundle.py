@@ -18,11 +18,13 @@ from .replay import file_sha256
 
 REVIEW_SCOPE_PATHS: tuple[str, ...] = (
     ".github/workflows/ci.yml",
+    "CHANGELOG.md",
     "CONTRIBUTING.md",
     "README.md",
     "SECURITY.md",
     "docs/adr/0002-benchseal-mvp.md",
     "docs/adr/0003-evidence-workflow.md",
+    "docs/adr/0004-mvp-closure.md",
     "docs/m2b-docker-backend.md",
     "docs/m2b-isolation-preflight.md",
     "docs/security/m2b-internal-review-2026-08-10.md",

@@ -27,6 +27,9 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Install BenchSeal
+        run: python -m pip install .
+
       - name: Compile source
         run: python -m compileall -q src tests
 
@@ -35,27 +38,26 @@ jobs:
 
       - name: Run BenchSeal MVP
         run: |
-          python -m benchseal --version
-          python -m benchseal validate examples/evidence.json --json
-          python -m benchseal validate examples/evidence-set --json
+          benchseal --version
+          benchseal validate examples/evidence.json --json
+          benchseal validate examples/evidence-set --json
 
       - name: Check M0 fixtures
-        run: python -m repolab_reference check-fixtures tests/fixtures/falsification
+        run: python -m benchseal check-fixtures tests/fixtures/falsification
 
       - name: Run M1 controlled replay CLI
-        run: python -m repolab_reference controlled-replay "$RUNNER_TEMP/repolab-controlled-replay"
+        run: python -m benchseal controlled-replay "$RUNNER_TEMP/benchseal-controlled-replay"
 
       - name: Run M2a controlled mock-agent CLI
-        run: python -m repolab_reference controlled-agent-replay "$RUNNER_TEMP/repolab-controlled-agent"
+        run: python -m benchseal controlled-agent-replay "$RUNNER_TEMP/benchseal-controlled-agent"
 
       - name: Run M2b isolation negative-control preflight
-        run: python -m repolab_reference isolation-preflight "$RUNNER_TEMP/repolab-isolation-preflight"
+        run: python -m benchseal isolation-preflight "$RUNNER_TEMP/benchseal-isolation-preflight"
 
       - name: Check M2b Docker policy receipt
-        run: python -m repolab_reference docker-isolation-plan "$RUNNER_TEMP/repolab-docker-plan"
+        run: python -m benchseal docker-isolation-plan "$RUNNER_TEMP/benchseal-docker-plan"
 
     env:
-      PYTHONPATH: src
       PYTHONDONTWRITEBYTECODE: "1"
 
   docker-isolation:
@@ -73,19 +75,21 @@ jobs:
         with:
           python-version: "3.13"
 
+      - name: Install BenchSeal
+        run: python -m pip install .
+
       - name: Build independent-review handoff
-        run: python -m repolab_reference security-review-bundle . "$RUNNER_TEMP/repolab-security-review"
+        run: python -m benchseal security-review-bundle . "$RUNNER_TEMP/benchseal-security-review"
 
       - name: Pull pinned M2b probe image
         run: docker pull "docker.io/library/python@sha256:399babc8b49529dabfd9c922f2b5eea81d611e4512e3ed250d75bd2e7683f4b0"
 
       - name: Run hardened M2b Docker isolation preflight
         env:
-          REPOLAB_RUN_DOCKER_INTEGRATION: "1"
+          BENCHSEAL_RUN_DOCKER_INTEGRATION: "1"
         run: |
           python -W error::ResourceWarning -m unittest tests.test_docker_backend.DockerLiveIntegrationTests -v
-          python -m repolab_reference docker-isolation-preflight "$RUNNER_TEMP/repolab-docker-isolation"
+          python -m benchseal docker-isolation-preflight "$RUNNER_TEMP/benchseal-docker-isolation"
 
     env:
-      PYTHONPATH: src
       PYTHONDONTWRITEBYTECODE: "1"

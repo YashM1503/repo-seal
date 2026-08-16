@@ -151,15 +151,11 @@ def _validate_evidence(
     json_output: bool,
     output: Optional[Path],
 ) -> int:
-    if output is not None and (output.exists() or output.is_symlink()):
-        print("output file must not already exist", file=sys.stderr)
-        return 2
     try:
         report = validate_evidence_path(evidence_path)
         receipt = report.to_json()
         if output is not None:
-            output.parent.mkdir(parents=True, exist_ok=True)
-            output.write_text(receipt + "\n", encoding="utf-8")
+            _write_new_text(output, receipt + "\n")
         print(receipt if json_output else report.to_text())
         return 0 if report.eligible else 1
     except (OSError, TypeError, ValueError) as error:
@@ -172,6 +168,17 @@ def _validate_evidence(
 
 def _terminal_text(value: str) -> str:
     return json.dumps(value, ensure_ascii=True)[1:-1]
+
+
+def _write_new_text(path: Path, content: str) -> None:
+    """Write UTF-8 text without ever replacing an existing directory entry."""
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        with path.open("x", encoding="utf-8") as handle:
+            handle.write(content)
+    except FileExistsError as error:
+        raise ValueError("output file must not already exist") from error
 
 
 def _check_fixtures(directory: Path) -> int:

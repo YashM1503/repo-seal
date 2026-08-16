@@ -5,8 +5,6 @@ to prove that the probe harness observes missing boundaries before a real
 container or microVM backend is admitted.  It never executes a real agent.
 """
 
-# ruff: noqa: UP045 -- public package compatibility includes Python 3.9.
-
 from __future__ import annotations
 
 import hashlib
@@ -368,6 +366,9 @@ def run_host_process_negative_control(
         "PYTHONDONTWRITEBYTECODE": "1",
         "TMPDIR": str(scratch),
         "TZ": "UTC",
+        # macOS replaces this value when it launches a process. Supplying the
+        # key explicitly keeps the environment allowlist exact on every host.
+        "__CF_USER_TEXT_ENCODING": "0x0:0x0:0x0",
     }
     network_observed = False
     try:

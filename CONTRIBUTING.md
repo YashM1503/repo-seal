@@ -97,6 +97,8 @@ The minimum local verification is:
 python -m unittest discover -s tests -v
 python -m compileall -q src tests
 python -m benchseal check-fixtures tests/fixtures/falsification
+python -m benchseal validate examples/evidence.json --json
+python -m benchseal validate examples/evidence-set --json
 ```
 
 If Ruff is installed, also run it on the files you changed:
@@ -106,6 +108,20 @@ ruff check path/to/changed_file.py
 ```
 
 Docker integration is opt-in because it requires the pinned image and a policy-supported engine. Follow [the Docker backend guide](docs/m2b-docker-backend.md); never bypass a failed engine or isolation check just to make the test green.
+
+## Prepare a release
+
+BenchSeal releases must satisfy the acceptance boundary in [ADR 0004](docs/adr/0004-mvp-closure.md). Before changing the version or creating a tag:
+
+1. update [CHANGELOG.md](CHANGELOG.md);
+2. confirm `pyproject.toml` and `src/benchseal/version.py` contain the same version;
+3. run the full local verification above;
+4. build a wheel and test the installed `benchseal` command outside the source tree;
+5. confirm CI uses `benchseal`, not a removed package name;
+6. generate a security-review bundle from the clean release commit; and
+7. keep both real-agent security gates closed unless an authenticated independent review covers that exact commit and scope digest.
+
+A release tag marks the supported validator workflow. It does not approve the advanced research runners for untrusted code.
 
 ## Open a pull request
 

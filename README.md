@@ -9,7 +9,7 @@ Give it a JSON evidence file. BenchSeal checks for common reasons a benchmark ta
 
 BenchSeal is intentionally small. It does not mine pull requests, run a coding agent, or claim that tests are ground truth. The MVP validates evidence collected by a trusted process and produces a reviewable receipt.
 
-## Try the MVP
+## Try BenchSeal
 
 BenchSeal requires Python 3.9 or newer and has no runtime dependencies outside the standard library.
 
@@ -103,9 +103,13 @@ Keep the evidence receipt beside the collection logs and environment metadata th
 
 ## Project status
 
-Version 0.9 is an MVP for the evidence-draft, single-task, task-set, and receipt workflow. The older controlled replay, mock-agent boundary, and Docker isolation experiments remain in the repository as research tools, but they are not the primary product surface and are not approved for arbitrary repositories or real agents.
+Version 1.0 closes the narrowly defined MVP for evidence drafts, single-task validation, task-set validation, and deterministic receipts. The supported command-line workflow is installable, tested on Python 3.9, 3.11, and 3.13, and documented with stable exit codes and fail-closed input handling.
 
-The original project was called RepoLab Reference. It was renamed because the broader “mine history and optimize coding agents” product overlaps existing systems. BenchSeal keeps the useful, narrow component: fail-closed task-evidence validation. The reasoning is preserved in the [red-team analysis](docs/analysis.md), [original scope decision](docs/adr/0001-private-reference-scope.md), [BenchSeal MVP decision](docs/adr/0002-benchseal-mvp.md), and [evidence workflow decision](docs/adr/0003-evidence-workflow.md).
+MVP completion does not include collecting the observations, running a coding agent, executing an arbitrary repository, or certifying an isolation system. Those are separate security-sensitive products, not unfinished pieces hidden behind the 1.0 label. The older controlled replay, mock-agent boundary, and Docker isolation experiments remain in the repository as research tools. They are not the primary product surface and are not approved for arbitrary repositories or real agents.
+
+The exact acceptance boundary is recorded in [ADR 0004](docs/adr/0004-mvp-closure.md), and release changes are listed in [CHANGELOG.md](CHANGELOG.md).
+
+The original project was called RepoLab Reference. It was renamed because the broader “mine history and optimize coding agents” product overlaps existing systems. BenchSeal keeps the useful, narrow component: fail-closed task-evidence validation. The reasoning is preserved in the [red-team analysis](docs/analysis.md), [original scope decision](docs/adr/0001-private-reference-scope.md), [BenchSeal MVP decision](docs/adr/0002-benchseal-mvp.md), [evidence workflow decision](docs/adr/0003-evidence-workflow.md), and [MVP closure decision](docs/adr/0004-mvp-closure.md).
 
 ## Advanced research commands
 
