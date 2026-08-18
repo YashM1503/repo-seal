@@ -1,0 +1,37 @@
+{
+  "name": "reposeal-agent",
+  "version": "0.1.0",
+  "description": "Agent skill and read-only MCP tools for RepoSeal",
+  "author": {
+    "name": "Yash Misra",
+    "url": "https://github.com/YashM1503"
+  },
+  "homepage": "https://github.com/YashM1503/repo-seal",
+  "repository": "https://github.com/YashM1503/repo-seal",
+  "license": "Apache-2.0",
+  "keywords": [
+    "coding-agents",
+    "benchmarks",
+    "evidence",
+    "mcp"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "RepoSeal Agent",
+    "shortDescription": "Check coding-agent benchmark evidence",
+    "longDescription": "Guides evidence review and exposes read-only MCP tools that validate coding-agent benchmark receipts without running agents or repositories.",
+    "developerName": "Yash Misra",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Read",
+      "Analyze"
+    ],
+    "websiteURL": "https://github.com/YashM1503/repo-seal",
+    "defaultPrompt": [
+      "Validate this coding-agent benchmark evidence with RepoSeal.",
+      "Explain why this RepoSeal result is on HOLD.",
+      "Show which evidence RepoSeal needs for a benchmark task."
+    ]
+  },
+  "mcpServers": "./.mcp.json"
+}

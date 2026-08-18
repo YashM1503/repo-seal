@@ -1,0 +1,31 @@
+#!/bin/sh
+set -eu
+
+script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+repo_root=$(CDPATH= cd -- "$script_dir/../../.." && pwd)
+
+if [ -n "${REPOSEAL_PYTHON:-}" ]; then
+  if [ ! -x "$REPOSEAL_PYTHON" ]; then
+    echo "REPOSEAL_PYTHON must name an executable Python environment containing RepoSeal" >&2
+    exit 127
+  fi
+  exec "$REPOSEAL_PYTHON" -m reposeal.mcp
+fi
+
+if [ -f "$repo_root/pyproject.toml" ] && [ -x "$repo_root/.venv/bin/python" ]; then
+  exec "$repo_root/.venv/bin/python" -m reposeal.mcp
+fi
+
+if command -v reposeal-mcp >/dev/null 2>&1; then
+  exec reposeal-mcp
+fi
+
+for python_command in python3.14 python3.13 python3.12 python3.11 python3.10 python3.9 python3; do
+  if command -v "$python_command" >/dev/null 2>&1 && \
+    "$python_command" -c 'import reposeal.mcp' >/dev/null 2>&1; then
+    exec "$python_command" -m reposeal.mcp
+  fi
+done
+
+echo "Install RepoSeal in Python 3.9 or newer or set REPOSEAL_PYTHON" >&2
+exit 127

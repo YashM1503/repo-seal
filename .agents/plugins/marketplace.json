@@ -1,0 +1,20 @@
+{
+  "name": "reposeal-tools",
+  "interface": {
+    "displayName": "RepoSeal Tools"
+  },
+  "plugins": [
+    {
+      "name": "reposeal-agent",
+      "source": {
+        "source": "local",
+        "path": "./plugins/reposeal-agent"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_USE"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}

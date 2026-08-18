@@ -150,9 +150,9 @@ def main():
         "probe_mount_read_only": _mount_has_option("/reposeal-isolation-probe.py", "ro"),
         "workspace_mount_read_only": _mount_has_option("/workspace", "ro"),
         "export_mount_read_only": _mount_has_option("/export", "ro"),
-        "tmp_noexec": _mount_has_option("/tmp", "noexec"),
-        "tmp_nosuid": _mount_has_option("/tmp", "nosuid"),
-        "tmp_nodev": _mount_has_option("/tmp", "nodev"),
+        "tmp_noexec": _mount_has_option("/tmp", "noexec"),  # nosec B108
+        "tmp_nosuid": _mount_has_option("/tmp", "nosuid"),  # nosec B108
+        "tmp_nodev": _mount_has_option("/tmp", "nodev"),  # nosec B108
         "identity_uid": os.getuid(),
         "identity_gid": os.getgid(),
         "capability_effective": _proc_status_value("CapEff"),

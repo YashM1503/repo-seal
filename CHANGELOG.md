@@ -2,6 +2,11 @@
 
 This file records user-visible RepoSeal changes. Dates use `YYYY-MM-DD`.
 
+## Unreleased
+
+- Added an installable agent skill, repository plugin marketplace, and read-only
+  MCP tools for evidence validation and field explanations.
+
 ## 1.1.0 — 2026-08-16
 
 - Renamed the product from BenchSeal to RepoSeal so the name directly describes the repository-evidence validation workflow.

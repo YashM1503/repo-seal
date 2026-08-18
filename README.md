@@ -125,6 +125,15 @@ python -m reposeal docker-isolation-plan /tmp/reposeal-docker-plan
 
 The live Docker probe and security-review handoff have additional requirements documented in [the Docker backend guide](docs/m2b-docker-backend.md). Independent review is still unavailable, so `security_gate_passed` and `safe_for_real_agents` remain false.
 
+## Agent integration
+
+The repository includes an installable agent skill and a read-only MCP server
+for validating evidence and explaining RepoSeal's checks. It does not expose
+agent execution, arbitrary repository execution, controlled replay, Docker
+probes, or evidence writes. See the
+[agent integration guide](docs/agent-integration.md) for installation and tool
+boundaries.
+
 ## Repository layout
 
 ```text
@@ -132,6 +141,8 @@ src/reposeal/        package and command-line implementation
 examples/            small inputs you can run locally
 tests/               unit, replay, and adversarial fixtures
 docs/                design decisions and security research
+.agents/              repository plugin marketplace
+plugins/              installable agent skill and read-only MCP server
 SECURITY.md          current security boundaries
 CONTRIBUTING.md      development workflow
 ```

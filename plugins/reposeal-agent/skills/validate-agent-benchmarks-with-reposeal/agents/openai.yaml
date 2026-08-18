@@ -1,0 +1,4 @@
+interface:
+  display_name: "Validate Benchmarks with RepoSeal"
+  short_description: "Check coding-agent benchmark evidence safely"
+  default_prompt: "Use $validate-agent-benchmarks-with-reposeal to validate this benchmark evidence and explain any HOLD findings."
