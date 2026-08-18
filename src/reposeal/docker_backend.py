@@ -42,11 +42,12 @@ DEFAULT_DOCKER_PROBE_IMAGE = (
 )
 
 EXPLICIT_CONTAINER_ENVIRONMENT: Mapping[str, str] = {
-    "HOME": "/tmp",
+    # This is the isolated container tmpfs, not a host temporary-file path.
+    "HOME": "/tmp",  # nosec B108
     "LANG": "C",
     "LC_ALL": "C",
     "PYTHONDONTWRITEBYTECODE": "1",
-    "TMPDIR": "/tmp",
+    "TMPDIR": "/tmp",  # nosec B108
     "TZ": "UTC",
 }
 

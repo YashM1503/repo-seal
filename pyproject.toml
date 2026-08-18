@@ -19,6 +19,7 @@ classifiers = [
 
 [project.scripts]
 reposeal = "reposeal.__main__:main"
+reposeal-mcp = "reposeal.mcp:main"
 
 [project.urls]
 Repository = "https://github.com/YashM1503/repo-seal"
